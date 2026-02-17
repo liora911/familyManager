@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 
 interface Message {
   role: "user" | "assistant";
@@ -85,12 +86,20 @@ export default function Home() {
           <h1 className="text-xl font-medium text-gray-900">🏠 מנהל הבית</h1>
           <p className="text-sm text-gray-500 mt-0.5">כתבי מה שעולה לך לראש</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          יציאה
-        </button>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard"
+            className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            📋 לוח בקרה
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            יציאה
+          </button>
+        </div>
       </header>
 
       {/* Messages area */}
