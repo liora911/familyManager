@@ -13,7 +13,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function Home() {
       ]);
     } finally {
       setLoading(false);
-      textareaRef.current?.focus();
+      inputRef.current?.focus();
     }
   };
 
@@ -162,7 +162,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto flex gap-3 items-end">
           <input
             type="text"
-            ref={textareaRef as React.RefObject<HTMLInputElement>}
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
