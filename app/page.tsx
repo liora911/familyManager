@@ -20,14 +20,7 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 200) + "px";
-    }
-  }, [input]);
+
 
   const handleSubmit = async () => {
     if (!input.trim() || loading) return;
@@ -85,16 +78,16 @@ export default function Home() {
   };
 
   return (
-    <div dir="rtl" className="flex flex-col h-dvh bg-zinc-950 text-zinc-100">
+    <div dir="rtl" className="flex flex-col h-dvh bg-gray-50 text-gray-900">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
+      <header className="flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-medium text-zinc-100">🏠 מנהל הבית</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">כתבי מה שעולה לך לראש</p>
+          <h1 className="text-xl font-medium text-gray-900">🏠 מנהל הבית</h1>
+          <p className="text-sm text-gray-500 mt-0.5">כתבי מה שעולה לך לראש</p>
         </div>
         <button
           onClick={handleLogout}
-          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           יציאה
         </button>
@@ -104,10 +97,10 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.length === 0 && (
-            <div className="text-center text-zinc-600 mt-20 space-y-3">
+            <div className="text-center text-gray-400 mt-20 space-y-3">
               <p className="text-4xl">🚀</p>
-              <p className="text-lg">מה עושים היום?</p>
-              <div className="text-sm space-y-1 text-zinc-700">
+              <p className="text-lg text-gray-500">מה עושים היום?</p>
+              <div className="text-sm space-y-1 text-gray-400">
                 <p>&quot;תקבעי לגפן רופא שיניים ליום חמישי ב-10 בבוקר&quot;</p>
                 <p>&quot;תוסיפי חלב, ביצים ולחם לרשימת הסופר&quot;</p>
                 <p>&quot;מה יש לנו השבוע?&quot;</p>
@@ -125,21 +118,21 @@ export default function Home() {
                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                   msg.role === "user"
                     ? "bg-blue-600 text-white"
-                    : "bg-zinc-800 text-zinc-100"
+                    : "bg-white text-gray-900 shadow-sm border border-gray-100"
                 }`}
               >
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">
                   {msg.content}
                 </p>
                 {msg.actions && msg.actions.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-zinc-700">
-                    <p className="text-xs text-zinc-500">
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-400">
                       {msg.actions.length}{" "}
                       {msg.actions.length === 1 ? "פעולה" : "פעולות"} בוצעו ✓
                     </p>
                   </div>
                 )}
-                <p className="text-[10px] text-zinc-500 mt-1">
+                <p className="text-[10px] text-gray-400 mt-1">
                   {msg.timestamp.toLocaleTimeString("he-IL", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -151,11 +144,11 @@ export default function Home() {
 
           {loading && (
             <div className="flex justify-end">
-              <div className="bg-zinc-800 rounded-2xl px-4 py-3">
+              <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
                 <div className="flex gap-1.5 items-center">
-                  <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.1s]" />
-                  <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.1s]" />
+                  <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]" />
                 </div>
               </div>
             </div>
@@ -165,24 +158,24 @@ export default function Home() {
       </main>
 
       {/* Input area */}
-      <footer className="flex-shrink-0 border-t border-zinc-800 p-4">
+      <footer className="flex-shrink-0 border-t border-gray-200 bg-white p-4">
         <div className="max-w-2xl mx-auto flex gap-3 items-end">
-          <textarea
-            ref={textareaRef}
+          <input
+            type="text"
+            ref={textareaRef as React.RefObject<HTMLInputElement>}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="תנעצי לי רופא עיניים לאיתן..."
-            rows={1}
-            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3
-                       text-zinc-100 placeholder-zinc-600 resize-none
+            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3
+                       text-gray-900 placeholder-gray-400
                        focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                       text-sm leading-relaxed"
+                       text-sm"
           />
           <button
             onClick={handleSubmit}
             disabled={!input.trim() || loading}
-            className="bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600
+            className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-200 disabled:text-gray-400
                        text-white font-medium px-6 py-3 rounded-xl transition-colors
                        text-sm flex-shrink-0"
           >
