@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     ];
 
     let response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-latest",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: systemPrompt,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: toolResults });
 
       response = await anthropic.messages.create({
-        model: "claude-sonnet-4-5-latest",
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: systemPrompt,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
