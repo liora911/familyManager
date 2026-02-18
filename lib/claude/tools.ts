@@ -47,31 +47,44 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
 
     case "list_events": {
       const from = input.from_date || new Date().toISOString();
-      const to =
-        input.to_date ||
-        new Date(Date.now() + 30 * 86400000).toISOString();
+      const to = input.to_date || new Date(Date.now() + 30 * 86400000).toISOString();
+      const status = input.status || "scheduled";
 
-      let memberFilter = sql``;
+      // Resolve member ID if filtering by member
+      let memberId = null;
       if (input.member_name) {
         const [m] = await sql`
           SELECT id FROM family_members
           WHERE name = ${input.member_name} OR nickname = ${input.member_name}
           LIMIT 1
         `;
-        if (m) memberFilter = sql`AND e.related_member_id = ${m.id}`;
+        memberId = m?.id || null;
       }
 
-      const rows = await sql`
+      // Build dynamic query with positional params (neon HTTP driver doesn't support fragment composition)
+      let query = `
         SELECT e.*, fm.name as member_name, c.name as contact_name, c.specialty
         FROM events e
         LEFT JOIN family_members fm ON e.related_member_id = fm.id
         LEFT JOIN contacts c ON e.contact_id = c.id
-        WHERE e.event_date >= ${from} AND e.event_date <= ${to}
-          AND e.status = ${input.status || "scheduled"}
-          ${input.category ? sql`AND e.category = ${input.category}` : sql``}
-          ${memberFilter}
-        ORDER BY e.event_date ASC
+        WHERE e.event_date >= $1 AND e.event_date <= $2
+          AND e.status = $3
       `;
+      const params: unknown[] = [from, to, status];
+
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND e.category = $${params.length}`;
+      }
+
+      if (memberId) {
+        params.push(memberId);
+        query += ` AND e.related_member_id = $${params.length}`;
+      }
+
+      query += ` ORDER BY e.event_date ASC`;
+
+      const rows = await sql(query, params);
       return { events: rows };
     }
 
@@ -116,15 +129,28 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
     }
 
     case "list_reminders": {
-      const rows = await sql`
+      const status = input.status || "pending";
+
+      let query = `
         SELECT r.*, e.title as event_title
         FROM reminders r
         LEFT JOIN events e ON r.event_id = e.id
-        WHERE r.status = ${input.status || "pending"}
-        ${input.from_date ? sql`AND r.remind_at >= ${input.from_date}` : sql``}
-        ${input.to_date ? sql`AND r.remind_at <= ${input.to_date}` : sql``}
-        ORDER BY r.remind_at ASC
+        WHERE r.status = $1
       `;
+      const params: unknown[] = [status];
+
+      if (input.from_date) {
+        params.push(input.from_date);
+        query += ` AND r.remind_at >= $${params.length}`;
+      }
+      if (input.to_date) {
+        params.push(input.to_date);
+        query += ` AND r.remind_at <= $${params.length}`;
+      }
+
+      query += ` ORDER BY r.remind_at ASC`;
+
+      const rows = await sql(query, params);
       return { reminders: rows };
     }
 
@@ -156,21 +182,32 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
     }
 
     case "get_shopping_list": {
-      const rows = await sql`
-        SELECT * FROM shopping_items
-        WHERE list_name = ${input.list_name || "default"}
-          ${!input.include_purchased ? sql`AND is_purchased = false` : sql``}
-        ORDER BY category, created_at
-      `;
-      return { items: rows };
+      const listName = input.list_name || "default";
+
+      if (input.include_purchased) {
+        const rows = await sql`
+          SELECT * FROM shopping_items
+          WHERE list_name = ${listName}
+          ORDER BY category, created_at
+        `;
+        return { items: rows };
+      } else {
+        const rows = await sql`
+          SELECT * FROM shopping_items
+          WHERE list_name = ${listName} AND is_purchased = false
+          ORDER BY category, created_at
+        `;
+        return { items: rows };
+      }
     }
 
     case "mark_purchased": {
-      await sql`
-        UPDATE shopping_items SET is_purchased = true
-        WHERE id = ANY(${input.item_ids}::uuid[])
-      `;
-      return { success: true, count: input.item_ids.length };
+      const ids = input.item_ids as string[];
+      // Mark each item individually since neon HTTP driver doesn't support array casting well
+      for (const id of ids) {
+        await sql`UPDATE shopping_items SET is_purchased = true WHERE id = ${id}`;
+      }
+      return { success: true, count: ids.length };
     }
 
     case "clear_shopping_list": {
@@ -203,29 +240,48 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
     }
 
     case "list_tasks": {
-      let assigneeFilter = sql``;
+      const status = input.status || "pending";
+
+      // Resolve assignee
+      let assignedId = null;
       if (input.assigned_to_name) {
         const [m] = await sql`
           SELECT id FROM family_members
           WHERE name = ${input.assigned_to_name} OR nickname = ${input.assigned_to_name}
           LIMIT 1
         `;
-        if (m) assigneeFilter = sql`AND t.assigned_to = ${m.id}`;
+        assignedId = m?.id || null;
       }
 
-      const rows = await sql`
+      let query = `
         SELECT t.*, fm.name as assigned_name
         FROM tasks t
         LEFT JOIN family_members fm ON t.assigned_to = fm.id
-        WHERE t.status = ${input.status || "pending"}
-          ${input.category ? sql`AND t.category = ${input.category}` : sql``}
-          ${input.priority ? sql`AND t.priority = ${input.priority}` : sql``}
-          ${assigneeFilter}
+        WHERE t.status = $1
+      `;
+      const params: unknown[] = [status];
+
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND t.category = $${params.length}`;
+      }
+      if (input.priority) {
+        params.push(input.priority);
+        query += ` AND t.priority = $${params.length}`;
+      }
+      if (assignedId) {
+        params.push(assignedId);
+        query += ` AND t.assigned_to = $${params.length}`;
+      }
+
+      query += `
         ORDER BY
           CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1
                           WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END,
           t.due_date ASC NULLS LAST
       `;
+
+      const rows = await sql(query, params);
       return { tasks: rows };
     }
 
@@ -273,26 +329,53 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
     }
 
     case "list_medications": {
-      let memberFilter = sql``;
+      let memberId = null;
       if (input.member_name) {
         const [m] = await sql`
           SELECT id FROM family_members
           WHERE name = ${input.member_name} OR nickname = ${input.member_name}
           LIMIT 1
         `;
-        if (m) memberFilter = sql`AND med.for_member_id = ${m.id}`;
+        memberId = m?.id || null;
       }
 
-      const rows = await sql`
-        SELECT med.*, fm.name as member_name
-        FROM medications med
-        LEFT JOIN family_members fm ON med.for_member_id = fm.id
-        WHERE 1=1
-          ${!input.include_expired ? sql`AND (med.end_date IS NULL OR med.end_date >= CURRENT_DATE)` : sql``}
-          ${memberFilter}
-        ORDER BY fm.name, med.name
-      `;
-      return { medications: rows };
+      if (memberId && !input.include_expired) {
+        const rows = await sql`
+          SELECT med.*, fm.name as member_name
+          FROM medications med
+          LEFT JOIN family_members fm ON med.for_member_id = fm.id
+          WHERE med.for_member_id = ${memberId}
+            AND (med.end_date IS NULL OR med.end_date >= CURRENT_DATE)
+          ORDER BY fm.name, med.name
+        `;
+        return { medications: rows };
+      } else if (memberId && input.include_expired) {
+        const rows = await sql`
+          SELECT med.*, fm.name as member_name
+          FROM medications med
+          LEFT JOIN family_members fm ON med.for_member_id = fm.id
+          WHERE med.for_member_id = ${memberId}
+          ORDER BY fm.name, med.name
+        `;
+        return { medications: rows };
+      } else if (!memberId && !input.include_expired) {
+        const rows = await sql`
+          SELECT med.*, fm.name as member_name
+          FROM medications med
+          LEFT JOIN family_members fm ON med.for_member_id = fm.id
+          WHERE (med.end_date IS NULL OR med.end_date >= CURRENT_DATE)
+          ORDER BY fm.name, med.name
+        `;
+        return { medications: rows };
+      } else {
+        const rows = await sql`
+          SELECT med.*, fm.name as member_name
+          FROM medications med
+          LEFT JOIN family_members fm ON med.for_member_id = fm.id
+          ORDER BY fm.name, med.name
+        `;
+        return { medications: rows };
+      }
     }
 
     // ── GENERAL QUERY ─────────────────────────────────────────────────

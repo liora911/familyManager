@@ -47,10 +47,16 @@ export async function POST(req: Request) {
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
       for (const tool of toolBlocks) {
-        const result = await executeTool(
-          tool.name,
-          tool.input as Record<string, unknown>
-        );
+        let result: unknown;
+        try {
+          result = await executeTool(
+            tool.name,
+            tool.input as Record<string, unknown>
+          );
+        } catch (e) {
+          console.error(`Tool ${tool.name} failed:`, e);
+          result = { error: `Tool execution failed: ${e instanceof Error ? e.message : "unknown error"}` };
+        }
         allActions.push({ tool: tool.name, input: tool.input, result });
         toolResults.push({
           type: "tool_result",
