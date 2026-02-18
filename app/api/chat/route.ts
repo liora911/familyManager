@@ -8,7 +8,7 @@ const anthropic = new Anthropic();
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const { message, history } = await req.json();
 
     if (!message || typeof message !== "string") {
       return Response.json({ error: "Missing message" }, { status: 400 });
@@ -23,9 +23,20 @@ export async function POST(req: Request) {
     const todayISO = new Date().toISOString();
     const systemPrompt = getSystemPrompt(`${today} (${todayISO})`);
 
-    const messages: Anthropic.MessageParam[] = [
-      { role: "user", content: message },
-    ];
+    // Build messages with conversation history for context
+    const messages: Anthropic.MessageParam[] = [];
+
+    // Add recent history (last ~10 messages from frontend)
+    if (Array.isArray(history) && history.length > 0) {
+      for (const msg of history) {
+        if (msg.role === "user" || msg.role === "assistant") {
+          messages.push({ role: msg.role, content: msg.content });
+        }
+      }
+    }
+
+    // Add current message
+    messages.push({ role: "user", content: message });
 
     let response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",

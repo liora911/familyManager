@@ -36,10 +36,16 @@ export default function Home() {
     setLoading(true);
 
     try {
+      // Send last 10 messages as history so Claude has conversation context
+      const history = messages.slice(-10).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.content }),
+        body: JSON.stringify({ message: userMsg.content, history }),
       });
       const data = await res.json();
 
