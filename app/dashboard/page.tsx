@@ -67,6 +67,7 @@ interface RecentItem {
   detail?: string;
   type: "event" | "task" | "shopping" | "reminder" | "medication";
   created_at: string;
+  relevant_date?: string;
 }
 
 interface DashboardData {
@@ -361,7 +362,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <span className="text-xs text-muted whitespace-nowrap">
-                            {formatDate(item.created_at)}
+                            {formatDate(item.relevant_date || item.created_at)}
                           </span>
                         </div>
                       </div>
