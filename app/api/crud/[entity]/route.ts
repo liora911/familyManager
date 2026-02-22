@@ -208,6 +208,13 @@ export async function DELETE(
 
   try {
     const body = await req.json();
+
+    // Special: clear all purchased shopping items
+    if (entity === "shopping" && body.clear_purchased) {
+      await sql`DELETE FROM shopping_items WHERE is_purchased = true`;
+      return json({ success: true });
+    }
+
     const { id } = body;
     if (!id) return json({ error: "Missing id" }, 400);
 

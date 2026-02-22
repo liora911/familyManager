@@ -21,6 +21,26 @@ function getUser(): string {
   return match?.[1] || "shared";
 }
 
+function loadMessages(): Message[] {
+  try {
+    const stored = localStorage.getItem("home-manager-messages");
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return parsed.map((m: Record<string, unknown>) => ({
+      ...m,
+      timestamp: new Date(m.timestamp as string),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: Message[]) {
+  // Keep last 50 messages to avoid bloating localStorage
+  const toSave = msgs.slice(-50);
+  localStorage.setItem("home-manager-messages", JSON.stringify(toSave));
+}
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,10 +51,12 @@ export default function Home() {
 
   useEffect(() => {
     setUser(getUser());
+    setMessages(loadMessages());
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) saveMessages(messages);
   }, [messages]);
 
   const handleSubmit = async () => {
@@ -103,6 +125,11 @@ export default function Home() {
     window.location.href = "/select";
   };
 
+  const handleClearChat = () => {
+    setMessages([]);
+    localStorage.removeItem("home-manager-messages");
+  };
+
   return (
     <div dir="rtl" className="flex flex-col h-dvh bg-gray-50 text-gray-900">
       {/* Header */}
@@ -114,6 +141,14 @@ export default function Home() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {messages.length > 0 && (
+            <button
+              onClick={handleClearChat}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              נקה צ׳אט
+            </button>
+          )}
           <button
             onClick={handleSwitchUser}
             className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors"

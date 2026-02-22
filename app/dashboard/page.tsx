@@ -223,6 +223,19 @@ export default function DashboardPage() {
 
   const openCreate = () => setModal({ entity: activeTab, mode: "create" });
 
+  const handleClearPurchased = async () => {
+    try {
+      await fetch("/api/crud/shopping", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clear_purchased: true }),
+      });
+      refresh();
+    } catch {
+      alert("שגיאה בניקוי");
+    }
+  };
+
   return (
     <div dir="rtl" className="min-h-dvh bg-gray-50 text-gray-900">
       {/* Header */}
@@ -288,16 +301,18 @@ export default function DashboardPage() {
 
       {/* Content */}
       <main className="max-w-3xl mx-auto p-4">
-        {/* Add button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={openCreate}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
-          >
-            <span className="text-lg leading-none">+</span>
-            הוספה
-          </button>
-        </div>
+        {/* Add button (hidden on Recent tab) */}
+        {activeTab !== "recent" && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={openCreate}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+            >
+              <span className="text-lg leading-none">+</span>
+              הוספה
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20 text-gray-400">טוען...</div>
@@ -459,6 +474,12 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     ))}
+                    <button
+                      onClick={handleClearPurchased}
+                      className="w-full mt-3 text-sm text-gray-400 hover:text-red-500 py-2 transition-colors"
+                    >
+                      🧹 נקה פריטים שנקנו
+                    </button>
                   </>
                 )}
               </div>
