@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className="dark">
       <head>
-        <link rel="apple-touch-icon" href="/icon-192.svg" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
