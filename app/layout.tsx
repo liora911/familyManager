@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: "#09090b",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -28,8 +28,13 @@ export default function RootLayout({
     <html lang="he" dir="rtl">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.svg" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");`,
+          }}
+        />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased bg-zinc-950 text-zinc-100">{children}</body>
     </html>
   );
 }

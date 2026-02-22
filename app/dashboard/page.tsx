@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import HouseIcon from "@/app/components/HouseIcon";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -110,10 +111,10 @@ function getUser(): string {
 }
 
 const priorityColors: Record<string, string> = {
-  urgent: "bg-red-100 text-red-700",
-  high: "bg-orange-100 text-orange-700",
-  medium: "bg-blue-100 text-blue-700",
-  low: "bg-gray-100 text-gray-600",
+  urgent: "bg-red-900/50 text-red-400",
+  high: "bg-orange-900/50 text-orange-400",
+  medium: "bg-blue-900/50 text-blue-400",
+  low: "bg-zinc-800 text-zinc-400",
 };
 
 const statusLabels: Record<string, string> = {
@@ -237,12 +238,15 @@ export default function DashboardPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-dvh bg-gray-50 text-gray-900">
+    <div dir="rtl" className="min-h-dvh bg-zinc-950 text-zinc-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-medium">📋 לוח בקרה</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-xl font-medium flex items-center gap-2">
+            <HouseIcon size={24} className="text-blue-400" />
+            לוח בקרה
+          </h1>
+          <p className="text-sm text-zinc-400 mt-0.5">
             {user === "shared" ? "כל המשפחה" : USER_LABELS[user] || user}
           </p>
         </div>
@@ -252,13 +256,13 @@ export default function DashboardPage() {
               document.cookie = "home-manager-user=; Path=/; Max-Age=0; SameSite=Lax";
               window.location.href = "/select";
             }}
-            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors"
+            className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 px-3 py-1.5 rounded-full transition-colors"
           >
             החלף פרופיל
           </button>
           <Link
             href="/"
-            className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
           >
             💬 חזרה לצ׳אט
           </Link>
@@ -266,7 +270,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-4 overflow-x-auto">
+      <div className="bg-zinc-900 border-b border-zinc-800 px-4 overflow-x-auto">
         <div className="flex gap-1 max-w-3xl mx-auto">
           {tabs.map((tab) => {
             const count = data?.[tab.key]?.length ?? 0;
@@ -276,8 +280,8 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === tab.key
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? "border-blue-500 text-blue-400"
+                    : "border-transparent text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 <span>{tab.icon}</span>
@@ -286,8 +290,8 @@ export default function DashboardPage() {
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded-full ${
                       activeTab === tab.key
-                        ? "bg-blue-100 text-blue-600"
-                        : "bg-gray-100 text-gray-500"
+                        ? "bg-blue-900/50 text-blue-400"
+                        : "bg-zinc-800 text-zinc-400"
                     }`}
                   >
                     {count}
@@ -315,9 +319,9 @@ export default function DashboardPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400">טוען...</div>
+          <div className="text-center py-20 text-zinc-500">טוען...</div>
         ) : !data ? (
-          <div className="text-center py-20 text-gray-400">שגיאה בטעינת נתונים</div>
+          <div className="text-center py-20 text-zinc-500">שגיאה בטעינת נתונים</div>
         ) : (
           <>
             {/* ── Recent ── */}
@@ -331,19 +335,19 @@ export default function DashboardPage() {
                     return (
                       <div
                         key={`${item.type}-${item.id}`}
-                        className="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
+                        className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm shadow-black/20 p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">{item.label}</p>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                              <span className="text-xs bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded-full">
                                 {info.icon} {info.label}
                               </span>
                               {item.detail && <Tag>{item.detail}</Tag>}
                             </div>
                           </div>
-                          <span className="text-xs text-gray-400 whitespace-nowrap">
+                          <span className="text-xs text-zinc-500 whitespace-nowrap">
                             {formatDate(item.created_at)}
                           </span>
                         </div>
@@ -385,7 +389,7 @@ export default function DashboardPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium">{e.title}</p>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-sm text-zinc-400 mt-1">
                             {formatDate(e.event_date)}
                           </p>
                           <div className="flex flex-wrap gap-2 mt-2">
@@ -421,11 +425,11 @@ export default function DashboardPage() {
                       )
                     ).map(([category, items]) => (
                       <div key={category}>
-                        <p className="text-xs font-medium text-gray-400 uppercase mb-2">
+                        <p className="text-xs font-medium text-zinc-500 uppercase mb-2">
                           {category}
                         </p>
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                          <ul className="divide-y divide-gray-100">
+                        <div className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm shadow-black/20 p-4">
+                          <ul className="divide-y divide-zinc-800">
                             {items.map((item) => (
                               <li
                                 key={item.id}
@@ -434,7 +438,7 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <input
                                     type="checkbox"
-                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                                    className="w-4 h-4 rounded border-zinc-600 text-blue-600 cursor-pointer"
                                     onChange={() =>
                                       handleQuickUpdate("shopping", item.id, {
                                         is_purchased: true,
@@ -444,7 +448,7 @@ export default function DashboardPage() {
                                   <span className="text-sm">{item.item_name}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="text-xs text-gray-400 flex items-center gap-2">
+                                  <div className="text-xs text-zinc-500 flex items-center gap-2">
                                     {item.quantity && <span>{item.quantity}</span>}
                                     {item.store && <span>🏪 {item.store}</span>}
                                   </div>
@@ -476,7 +480,7 @@ export default function DashboardPage() {
                     ))}
                     <button
                       onClick={handleClearPurchased}
-                      className="w-full mt-3 text-sm text-gray-400 hover:text-red-500 py-2 transition-colors"
+                      className="w-full mt-3 text-sm text-zinc-500 hover:text-red-400 py-2 transition-colors"
                     >
                       🧹 נקה פריטים שנקנו
                     </button>
@@ -516,7 +520,7 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium">{t.title}</p>
                           {t.description && (
-                            <p className="text-sm text-gray-500 mt-1">{t.description}</p>
+                            <p className="text-sm text-zinc-400 mt-1">{t.description}</p>
                           )}
                           <div className="flex flex-wrap gap-2 mt-2">
                             <span
@@ -537,7 +541,7 @@ export default function DashboardPage() {
                               onClick={() =>
                                 handleQuickUpdate("tasks", t.id, { status: "done" })
                               }
-                              className="text-xs text-green-600 hover:text-green-700"
+                              className="text-xs text-green-400 hover:text-green-300"
                             >
                               סמן כבוצע ✓
                             </button>
@@ -657,14 +661,14 @@ function Card({
   onDelete?: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 group">
+    <div className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm shadow-black/20 p-4 group">
       {children}
       {(onEdit || onDelete) && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity">
           {onEdit && (
             <button
               onClick={onEdit}
-              className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
             >
               ✏️ עריכה
             </button>
@@ -672,7 +676,7 @@ function Card({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
             >
               🗑️ מחיקה
             </button>
@@ -695,10 +699,10 @@ function ActionButtons({
   const size = small ? "text-xs" : "text-sm";
   return (
     <div className="flex gap-1">
-      <button onClick={onEdit} className={`${size} text-blue-600 hover:text-blue-700 p-1`}>
+      <button onClick={onEdit} className={`${size} text-blue-400 hover:text-blue-300 p-1`}>
         ✏️
       </button>
-      <button onClick={onDelete} className={`${size} text-red-500 hover:text-red-600 p-1`}>
+      <button onClick={onDelete} className={`${size} text-red-400 hover:text-red-300 p-1`}>
         🗑️
       </button>
     </div>
@@ -707,7 +711,7 @@ function ActionButtons({
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+    <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">
       {children}
     </span>
   );
@@ -715,11 +719,11 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    scheduled: "bg-blue-100 text-blue-600",
-    completed: "bg-green-100 text-green-600",
-    cancelled: "bg-gray-100 text-gray-400",
-    pending: "bg-yellow-100 text-yellow-600",
-    in_progress: "bg-purple-100 text-purple-600",
+    scheduled: "bg-blue-900/50 text-blue-400",
+    completed: "bg-green-900/50 text-green-400",
+    cancelled: "bg-zinc-800 text-zinc-500",
+    pending: "bg-yellow-900/50 text-yellow-400",
+    in_progress: "bg-purple-900/50 text-purple-400",
   };
   return (
     <span
@@ -734,7 +738,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="text-center py-16 text-gray-400">
+    <div className="text-center py-16 text-zinc-500">
       <p className="text-lg">{text}</p>
     </div>
   );
@@ -943,21 +947,21 @@ function FormModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto"
+        className="bg-zinc-900 rounded-2xl shadow-xl shadow-black/30 w-full max-w-md max-h-[85vh] overflow-y-auto"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-lg font-medium">
             {mode === "create" ? `הוספת ${tabLabel}` : `עריכת ${tabLabel}`}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="text-zinc-500 hover:text-zinc-300 text-xl leading-none"
           >
             ✕
           </button>
@@ -966,9 +970,9 @@ function FormModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {fields.map((field) => (
             <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 {field.label}
-                {field.required && <span className="text-red-500 mr-1">*</span>}
+                {field.required && <span className="text-red-400 mr-1">*</span>}
               </label>
 
               {field.type === "select" ? (
@@ -978,7 +982,7 @@ function FormModal({
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
                   required={field.required}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50
+                  className="w-full border border-zinc-700 rounded-xl px-3 py-2.5 text-sm bg-zinc-800 text-zinc-100
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">בחר...</option>
@@ -996,9 +1000,9 @@ function FormModal({
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, [field.key]: e.target.checked }))
                     }
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                    className="w-4 h-4 rounded border-zinc-600 text-blue-600"
                   />
-                  <span className="text-sm text-gray-600">כן</span>
+                  <span className="text-sm text-zinc-400">כן</span>
                 </label>
               ) : (
                 <input
@@ -1014,7 +1018,7 @@ function FormModal({
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
                   required={field.required}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50
+                  className="w-full border border-zinc-700 rounded-xl px-3 py-2.5 text-sm bg-zinc-800 text-zinc-100
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               )}
@@ -1022,7 +1026,7 @@ function FormModal({
           ))}
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+            <p className="text-sm text-red-400 bg-red-900/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -1031,7 +1035,7 @@ function FormModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300
+              className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700
                          text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
             >
               {saving ? "שומר..." : mode === "create" ? "הוסף" : "שמור"}
@@ -1039,8 +1043,8 @@ function FormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600
-                         hover:bg-gray-50 transition-colors"
+              className="px-6 py-2.5 border border-zinc-700 rounded-xl text-sm text-zinc-400
+                         hover:bg-zinc-800 transition-colors"
             >
               ביטול
             </button>

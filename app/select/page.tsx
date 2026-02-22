@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import HouseIcon from "@/app/components/HouseIcon";
 
 const profiles = [
   {
@@ -9,7 +10,7 @@ const profiles = [
     emoji: "👨",
     color: "from-blue-500 to-blue-600",
     hoverColor: "hover:from-blue-400 hover:to-blue-500",
-    shadow: "shadow-blue-200",
+    shadow: "shadow-blue-500/20",
     description: "אבא",
   },
   {
@@ -18,7 +19,7 @@ const profiles = [
     emoji: "🏠",
     color: "from-emerald-500 to-emerald-600",
     hoverColor: "hover:from-emerald-400 hover:to-emerald-500",
-    shadow: "shadow-emerald-200",
+    shadow: "shadow-emerald-500/20",
     description: "כל המשפחה",
   },
   {
@@ -27,7 +28,7 @@ const profiles = [
     emoji: "👩",
     color: "from-purple-500 to-purple-600",
     hoverColor: "hover:from-purple-400 hover:to-purple-500",
-    shadow: "shadow-purple-200",
+    shadow: "shadow-purple-500/20",
     description: "אמא",
   },
 ];
@@ -45,12 +46,12 @@ export default function SelectPage() {
   return (
     <div
       dir="rtl"
-      className="flex flex-col items-center justify-center min-h-dvh bg-gray-50 px-4"
+      className="flex flex-col items-center justify-center min-h-dvh bg-zinc-950 px-4"
     >
       <div className="text-center mb-10">
-        <p className="text-5xl mb-3">🏠</p>
-        <h1 className="text-2xl font-semibold text-gray-900">מנהל הבית</h1>
-        <p className="text-gray-500 mt-2">מי משתמש/ת?</p>
+        <HouseIcon size={64} className="text-blue-400 mx-auto mb-3" />
+        <h1 className="text-2xl font-semibold text-zinc-100">מנהל הבית</h1>
+        <p className="text-zinc-400 mt-2">מי משתמש/ת?</p>
       </div>
 
       <div className="flex gap-4 flex-wrap justify-center max-w-lg w-full">

@@ -4,8 +4,8 @@
   "description": "ניהול בית חכם למשפחת מימון",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#2563eb",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
   "dir": "rtl",
   "lang": "he",
   "icons": [
