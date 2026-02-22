@@ -8,20 +8,26 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow login page and auth API
-  if (pathname === "/login" || pathname === "/api/auth") {
+  // Allow login page, select page, and auth API
+  if (pathname === "/login" || pathname === "/select" || pathname === "/api/auth") {
     return NextResponse.next();
   }
 
   // Check auth cookie
   const authCookie = request.cookies.get("home-manager-auth");
-  if (authCookie?.value === "authenticated") {
-    return NextResponse.next();
+  if (authCookie?.value !== "authenticated") {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Redirect to login
-  const loginUrl = new URL("/login", request.url);
-  return NextResponse.redirect(loginUrl);
+  // Check user selection cookie (skip for API routes — they read it themselves)
+  if (!pathname.startsWith("/api/")) {
+    const userCookie = request.cookies.get("home-manager-user");
+    if (!userCookie?.value) {
+      return NextResponse.redirect(new URL("/select", request.url));
+    }
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

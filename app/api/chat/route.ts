@@ -8,7 +8,7 @@ const anthropic = new Anthropic();
 
 export async function POST(req: Request) {
   try {
-    const { message, history } = await req.json();
+    const { message, history, user } = await req.json();
 
     if (!message || typeof message !== "string") {
       return Response.json({ error: "Missing message" }, { status: 400 });
@@ -21,7 +21,8 @@ export async function POST(req: Request) {
       day: "numeric",
     });
     const todayISO = new Date().toISOString();
-    const systemPrompt = getSystemPrompt(`${today} (${todayISO})`);
+    const activeUser = user || "shared";
+    const systemPrompt = getSystemPrompt(`${today} (${todayISO})`, activeUser);
 
     // Build messages with conversation history for context
     const messages: Anthropic.MessageParam[] = [];

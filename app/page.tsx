@@ -10,18 +10,32 @@ interface Message {
   timestamp: Date;
 }
 
+const USER_LABELS: Record<string, string> = {
+  yarin: "ירין",
+  liora: "ליאורה",
+  shared: "משותף",
+};
+
+function getUser(): string {
+  const match = document.cookie.match(/home-manager-user=(\w+)/);
+  return match?.[1] || "shared";
+}
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState("shared");
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setUser(getUser());
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-
 
   const handleSubmit = async () => {
     if (!input.trim() || loading) return;
@@ -45,7 +59,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.content, history }),
+        body: JSON.stringify({ message: userMsg.content, history, user }),
       });
       const data = await res.json();
 
@@ -79,9 +93,14 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    document.cookie =
-      "home-manager-auth=; Path=/; Max-Age=0; SameSite=Lax";
+    document.cookie = "home-manager-auth=; Path=/; Max-Age=0; SameSite=Lax";
+    document.cookie = "home-manager-user=; Path=/; Max-Age=0; SameSite=Lax";
     window.location.href = "/login";
+  };
+
+  const handleSwitchUser = () => {
+    document.cookie = "home-manager-user=; Path=/; Max-Age=0; SameSite=Lax";
+    window.location.href = "/select";
   };
 
   return (
@@ -90,9 +109,17 @@ export default function Home() {
       <header className="flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-medium text-gray-900">🏠 מנהל הבית</h1>
-          <p className="text-sm text-gray-500 mt-0.5">כתבי מה שעולה לך לראש</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {user === "shared" ? "מצב משותף" : `שלום ${USER_LABELS[user] || user}`}
+          </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSwitchUser}
+            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full transition-colors"
+          >
+            החלף פרופיל
+          </button>
           <Link
             href="/dashboard"
             className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
