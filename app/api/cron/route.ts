@@ -1,7 +1,42 @@
 import { sql } from "@/lib/db";
 import { Resend } from "resend";
+import webpush from "web-push";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    "mailto:liora532@gmail.com",
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+async function sendPushNotifications(title: string, body: string, tag: string) {
+  try {
+    const subs = await sql`SELECT * FROM push_subscriptions`;
+    for (const sub of subs) {
+      const pushSub = {
+        endpoint: sub.endpoint,
+        keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth },
+      };
+      try {
+        await webpush.sendNotification(
+          pushSub,
+          JSON.stringify({ title, body, tag, url: "/" })
+        );
+      } catch (err: unknown) {
+        // If subscription is expired/invalid, remove it
+        const statusCode = (err as { statusCode?: number }).statusCode;
+        if (statusCode === 410 || statusCode === 404) {
+          await sql`DELETE FROM push_subscriptions WHERE endpoint = ${sub.endpoint}`;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Push notification error:", err);
+  }
+}
 
 export async function GET(req: Request) {
   // Verify cron secret (Vercel sends this header for cron jobs)
@@ -34,6 +69,16 @@ export async function GET(req: Request) {
         : `תזכורת: ${reminder.message.slice(0, 50)}`;
 
       try {
+        // Send push notification
+        await sendPushNotifications(
+          "🔔 תזכורת",
+          reminder.event_title
+            ? `${reminder.message} (${reminder.event_title})`
+            : reminder.message,
+          `reminder-${reminder.id}`
+        );
+
+        // Send email as fallback
         await resend.emails.send({
           from: "מנהל הבית <onboarding@resend.dev>",
           to: reminderEmail,

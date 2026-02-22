@@ -9,6 +9,39 @@ const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
   toggle: () => {},
 });
 
+async function subscribeToPush(reg: ServiceWorkerRegistration) {
+  try {
+    // Check if already subscribed
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) return;
+
+    // Get VAPID public key from server
+    const res = await fetch("/api/push");
+    const { publicKey } = await res.json();
+    if (!publicKey) return;
+
+    // Convert VAPID key to Uint8Array
+    const raw = atob(publicKey.replace(/-/g, "+").replace(/_/g, "/"));
+    const key = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i);
+
+    // Subscribe
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key,
+    });
+
+    // Send subscription to server
+    await fetch("/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: sub.toJSON() }),
+    });
+  } catch {
+    // Push not supported or permission denied — fail silently
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
@@ -18,9 +51,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(initial);
     applyTheme(initial);
 
-    // Register service worker
+    // Register service worker + push notifications
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js");
+      navigator.serviceWorker.register("/sw.js").then((reg) => {
+        // Subscribe to push notifications after SW is ready
+        subscribeToPush(reg);
+      });
     }
 
     // PWA standalone tweaks

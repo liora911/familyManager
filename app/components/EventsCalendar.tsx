@@ -47,15 +47,16 @@ function toDatetimeLocal(d: Date) {
 
 export default function EventsCalendar({
   events,
-  onAddEvent,
+  onAdd,
 }: {
   events: Event[];
-  onAddEvent?: (date: string) => void;
+  onAdd?: (type: "events" | "tasks", date: string) => void;
 }) {
   const [view, setView] = useState<CalView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<DayInfo | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  const [addMenu, setAddMenu] = useState<{ date: Date; pos: { top: number; left: number } } | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const now = new Date();
@@ -170,6 +171,7 @@ export default function EventsCalendar({
       if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
         setSelectedDay(null);
         setPopoverPos(null);
+        setAddMenu(null);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -179,11 +181,24 @@ export default function EventsCalendar({
   const formatTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 
-  const handleAdd = (date: Date) => {
-    if (!onAddEvent) return;
+  const handleAdd = (type: "events" | "tasks", date: Date) => {
+    if (!onAdd) return;
     const d = new Date(date);
     d.setHours(9, 0, 0, 0);
-    onAddEvent(toDatetimeLocal(d));
+    onAdd(type, toDatetimeLocal(d));
+    setAddMenu(null);
+  };
+
+  const showAddMenu = (date: Date, anchor: HTMLElement) => {
+    const rect = anchor.getBoundingClientRect();
+    const calRect = calendarRef.current?.getBoundingClientRect();
+    if (calRect) {
+      const top = rect.bottom - calRect.top + 4;
+      let left = rect.left - calRect.left + rect.width / 2;
+      if (left < 60) left = 60;
+      if (left > calRect.width - 60) left = calRect.width - 60;
+      setAddMenu({ date, pos: { top, left } });
+    }
   };
 
   // Shared day cell for month grid
@@ -216,9 +231,9 @@ export default function EventsCalendar({
               )}
             </div>
           )}
-          {onAddEvent && (
+          {onAdd && (
             <span
-              onClick={(e) => { e.stopPropagation(); handleAdd(day.date); }}
+              onClick={(e) => { e.stopPropagation(); showAddMenu(day.date, e.currentTarget as HTMLElement); }}
               className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] leading-none flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity cursor-pointer"
             >
               +
@@ -243,9 +258,9 @@ export default function EventsCalendar({
               <p className={`text-sm font-semibold ${isT ? "text-badge-blue-text" : "text-primary"}`}>
                 {day.date.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "short" })}
               </p>
-              {onAddEvent && (
+              {onAdd && (
                 <button
-                  onClick={() => handleAdd(day.date)}
+                  onClick={(e) => showAddMenu(day.date, e.currentTarget)}
                   className="w-6 h-6 rounded-full bg-blue-600 text-white text-sm leading-none flex items-center justify-center hover:bg-blue-500 transition-colors"
                 >
                   +
@@ -346,9 +361,9 @@ export default function EventsCalendar({
                     month: "short",
                   })}
                 </p>
-                {onAddEvent && (
+                {onAdd && (
                   <button
-                    onClick={() => handleAdd(selectedDay.date)}
+                    onClick={(e) => showAddMenu(selectedDay.date, e.currentTarget)}
                     className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center hover:bg-blue-500"
                   >
                     +
@@ -375,6 +390,32 @@ export default function EventsCalendar({
         </>
       ) : (
         renderWeekView()
+      )}
+
+      {/* Add menu */}
+      {addMenu && (
+        <div
+          className="absolute z-50 bg-card rounded-xl border border-border p-2 flex flex-col gap-1"
+          style={{
+            top: addMenu.pos.top,
+            left: addMenu.pos.left,
+            transform: "translateX(-50%)",
+            boxShadow: "0 4px 12px var(--color-shadow)",
+          }}
+        >
+          <button
+            onClick={() => handleAdd("events", addMenu.date)}
+            className="text-xs px-3 py-2 rounded-lg hover:bg-hover transition-colors text-primary text-right whitespace-nowrap"
+          >
+            📅 אירוע
+          </button>
+          <button
+            onClick={() => handleAdd("tasks", addMenu.date)}
+            className="text-xs px-3 py-2 rounded-lg hover:bg-hover transition-colors text-primary text-right whitespace-nowrap"
+          >
+            ✅ משימה
+          </button>
+        </div>
       )}
 
       {/* Legend */}

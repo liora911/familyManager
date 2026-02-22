@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import HouseIcon from "@/app/components/HouseIcon";
 import EventsCalendar from "@/app/components/EventsCalendar";
@@ -401,11 +401,11 @@ export default function DashboardPage() {
                 {eventsView === "calendar" ? (
                   <EventsCalendar
                     events={data.events}
-                    onAddEvent={(date) =>
+                    onAdd={(type, date) =>
                       setModal({
-                        entity: "events",
+                        entity: type,
                         mode: "create",
-                        initial: { event_date: date },
+                        initial: type === "events" ? { event_date: date } : { due_date: date },
                       })
                     }
                   />
@@ -680,6 +680,9 @@ export default function DashboardPage() {
         )}
       </main>
 
+      {/* Footer — live clock + date */}
+      <ClockFooter />
+
       {modal && (
         <FormModal
           entity={modal.entity}
@@ -780,6 +783,37 @@ function StatusBadge({ status }: { status: string }) {
     >
       {statusLabels[status] || status}
     </span>
+  );
+}
+
+function ClockFooter() {
+  const [now, setNow] = useState(new Date());
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timerRef.current);
+  }, []);
+
+  const time = now.toLocaleTimeString("he-IL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const date = now.toLocaleDateString("he-IL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <footer className="border-t border-border bg-card px-4 py-3 text-center text-secondary">
+      <span className="text-lg font-medium tabular-nums">{time}</span>
+      <span className="mx-2 text-muted">·</span>
+      <span className="text-sm">{date}</span>
+    </footer>
   );
 }
 
