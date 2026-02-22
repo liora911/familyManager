@@ -58,17 +58,27 @@ interface Medication {
   member_name?: string;
 }
 
+interface RecentItem {
+  id: string;
+  label: string;
+  detail?: string;
+  type: "event" | "task" | "shopping" | "reminder" | "medication";
+  created_at: string;
+}
+
 interface DashboardData {
   events: Event[];
   tasks: Task[];
   shopping: ShoppingItem[];
   reminders: Reminder[];
   medications: Medication[];
+  recent: RecentItem[];
 }
 
 // ── Constants ────────────────────────────────────────────────────────
 
 const tabs = [
+  { key: "recent", label: "אחרונים", icon: "🕐" },
   { key: "events", label: "אירועים", icon: "📅" },
   { key: "shopping", label: "קניות", icon: "🛒" },
   { key: "tasks", label: "משימות", icon: "✅" },
@@ -77,6 +87,14 @@ const tabs = [
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
+
+const typeLabels: Record<string, { label: string; icon: string }> = {
+  event: { label: "אירוע", icon: "📅" },
+  task: { label: "משימה", icon: "✅" },
+  shopping: { label: "קניות", icon: "🛒" },
+  reminder: { label: "תזכורת", icon: "🔔" },
+  medication: { label: "תרופה", icon: "💊" },
+};
 
 const FAMILY_MEMBERS = ["ירין", "תותי", "איתן", "גפן"];
 
@@ -160,7 +178,7 @@ async function crudRequest(entity: string, method: string, body: Record<string, 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabKey>("events");
+  const [activeTab, setActiveTab] = useState<TabKey>("recent");
   const [user, setUser] = useState("shared");
   const [modal, setModal] = useState<{
     entity: string;
@@ -287,6 +305,40 @@ export default function DashboardPage() {
           <div className="text-center py-20 text-gray-400">שגיאה בטעינת נתונים</div>
         ) : (
           <>
+            {/* ── Recent ── */}
+            {activeTab === "recent" && (
+              <div className="space-y-3">
+                {!data.recent || data.recent.length === 0 ? (
+                  <Empty text="אין פריטים חדשים השבוע" />
+                ) : (
+                  data.recent.map((item) => {
+                    const info = typeLabels[item.type] || { label: item.type, icon: "📌" };
+                    return (
+                      <div
+                        key={`${item.type}-${item.id}`}
+                        className="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">{item.label}</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                                {info.icon} {info.label}
+                              </span>
+                              {item.detail && <Tag>{item.detail}</Tag>}
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400 whitespace-nowrap">
+                            {formatDate(item.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
             {/* ── Events ── */}
             {activeTab === "events" && (
               <div className="space-y-3">

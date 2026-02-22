@@ -101,7 +101,27 @@ export async function GET(req: NextRequest) {
           ORDER BY r.remind_at ASC`,
     ]);
 
-    return NextResponse.json({ events, tasks, shopping, reminders, medications });
+    // Recently added items across all types (last 7 days)
+    const recent = await sql`
+      SELECT id, title as label, category as detail, 'event' as type, created_at FROM events
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+      UNION ALL
+      SELECT id, title as label, priority as detail, 'task' as type, created_at FROM tasks
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+      UNION ALL
+      SELECT id, item_name as label, category as detail, 'shopping' as type, created_at FROM shopping_items
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+      UNION ALL
+      SELECT id, message as label, NULL as detail, 'reminder' as type, created_at FROM reminders
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+      UNION ALL
+      SELECT id, name as label, dosage as detail, 'medication' as type, created_at FROM medications
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+      ORDER BY created_at DESC
+      LIMIT 30
+    `;
+
+    return NextResponse.json({ events, tasks, shopping, reminders, medications, recent });
   } catch (err) {
     console.error("Dashboard error:", err);
     return NextResponse.json({ error: "Failed to load dashboard" }, { status: 500 });
