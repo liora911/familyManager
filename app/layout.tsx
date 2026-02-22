@@ -31,23 +31,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-(function(){
-  var t=localStorage.getItem("theme")||"dark";
-  if(t==="dark") document.documentElement.classList.add("dark");
-  else document.documentElement.classList.remove("dark");
-})();
-if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
-if(window.matchMedia("(display-mode: standalone)").matches){
-  document.body.classList.add("pwa");
-  document.addEventListener("contextmenu",function(e){
-    if(e.shiftKey) return;
-    if(e.target.matches("a,img,textarea:not([disabled]),input[type=text]:not([disabled])")) return;
-    var s=window.getSelection();
-    if(s&&s.toString().length>0) return;
-    e.preventDefault();
-  });
-}`,
+            __html: `(function(){var t=localStorage.getItem("theme")||"dark";if(t==="dark")document.documentElement.classList.add("dark");else document.documentElement.classList.remove("dark");})();`,
           }}
         />
       </head>

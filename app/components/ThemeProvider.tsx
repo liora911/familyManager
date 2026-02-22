@@ -17,6 +17,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initial = saved || "dark";
     setTheme(initial);
     applyTheme(initial);
+
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+
+    // PWA standalone tweaks
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      document.body.classList.add("pwa");
+      document.addEventListener("contextmenu", function (e) {
+        if ((e as MouseEvent).shiftKey) return;
+        const t = e.target as HTMLElement;
+        if (t.matches("a,img,textarea:not([disabled]),input[type=text]:not([disabled])")) return;
+        const s = window.getSelection();
+        if (s && s.toString().length > 0) return;
+        e.preventDefault();
+      });
+    }
   }, []);
 
   const applyTheme = (t: Theme) => {
