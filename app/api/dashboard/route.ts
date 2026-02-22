@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
            LEFT JOIN family_members fm ON e.related_member_id = fm.id
            LEFT JOIN contacts c ON e.contact_id = c.id
            WHERE e.event_date >= NOW() - INTERVAL '7 days'
-             AND (e.related_member_id = $1 OR e.related_member_id IS NULL)
+             AND e.related_member_id = $1
            ORDER BY e.event_date ASC
            LIMIT 50`,
           [memberId]
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
            FROM tasks t
            LEFT JOIN family_members fm ON t.assigned_to = fm.id
            WHERE t.status != 'done'
-             AND (t.assigned_to = $1 OR t.assigned_to IS NULL)
+             AND t.assigned_to = $1
            ORDER BY
              CASE t.priority
                WHEN 'urgent' THEN 0 WHEN 'high' THEN 1
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         `SELECT m.*, fm.name as member_name
          FROM medications m
          LEFT JOIN family_members fm ON m.for_member_id = fm.id
-         WHERE m.for_member_id = $1 OR m.for_member_id IS NULL
+         WHERE m.for_member_id = $1
          ORDER BY m.created_at DESC`,
         [memberId]
       );
