@@ -19,8 +19,17 @@ export async function POST(req: Request) {
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "Asia/Jerusalem",
     });
-    const todayISO = new Date().toISOString();
+    const todayISO = new Date().toLocaleString("sv-SE", {
+      timeZone: "Asia/Jerusalem",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).replace(" ", "T") + "+02:00";
     const activeUser = user || "shared";
     const systemPrompt = getSystemPrompt(`${today} (${todayISO})`, activeUser);
 
