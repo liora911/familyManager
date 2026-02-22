@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import HouseIcon from "@/app/components/HouseIcon";
+import EventsCalendar from "@/app/components/EventsCalendar";
 import { useTheme } from "@/app/components/ThemeProvider";
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -182,6 +183,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("recent");
   const [user, setUser] = useState("shared");
+  const [eventsView, setEventsView] = useState<"list" | "calendar">("list");
   const [modal, setModal] = useState<{
     entity: string;
     mode: "create" | "edit";
@@ -372,7 +374,42 @@ export default function DashboardPage() {
             {/* ── Events ── */}
             {activeTab === "events" && (
               <div className="space-y-3">
-                {data.events.length === 0 ? (
+                {/* View toggle */}
+                <div className="flex items-center gap-1 bg-tag rounded-lg p-1 w-fit">
+                  <button
+                    onClick={() => setEventsView("list")}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                      eventsView === "list"
+                        ? "bg-card text-primary shadow-sm"
+                        : "text-secondary hover:text-primary"
+                    }`}
+                  >
+                    📋 רשימה
+                  </button>
+                  <button
+                    onClick={() => setEventsView("calendar")}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                      eventsView === "calendar"
+                        ? "bg-card text-primary shadow-sm"
+                        : "text-secondary hover:text-primary"
+                    }`}
+                  >
+                    📅 לוח חודשי
+                  </button>
+                </div>
+
+                {eventsView === "calendar" ? (
+                  <EventsCalendar
+                    events={data.events}
+                    onAddEvent={(date) =>
+                      setModal({
+                        entity: "events",
+                        mode: "create",
+                        initial: { event_date: date },
+                      })
+                    }
+                  />
+                ) : data.events.length === 0 ? (
                   <Empty text="אין אירועים קרובים" />
                 ) : (
                   data.events.map((e) => (
