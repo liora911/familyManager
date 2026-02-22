@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import HouseIcon from "@/app/components/HouseIcon";
+import { useTheme } from "@/app/components/ThemeProvider";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -111,10 +112,10 @@ function getUser(): string {
 }
 
 const priorityColors: Record<string, string> = {
-  urgent: "bg-red-900/50 text-red-400",
-  high: "bg-orange-900/50 text-orange-400",
-  medium: "bg-blue-900/50 text-blue-400",
-  low: "bg-zinc-800 text-zinc-400",
+  urgent: "bg-badge-red-bg text-badge-red-text",
+  high: "bg-badge-orange-bg text-badge-orange-text",
+  medium: "bg-badge-blue-bg text-badge-blue-text",
+  low: "bg-badge-neutral-bg text-badge-neutral-text",
 };
 
 const statusLabels: Record<string, string> = {
@@ -186,6 +187,7 @@ export default function DashboardPage() {
     mode: "create" | "edit";
     initial?: Record<string, unknown>;
   } | null>(null);
+  const { theme, toggle } = useTheme();
 
   const refresh = useCallback(() => {
     fetch("/api/dashboard")
@@ -238,39 +240,48 @@ export default function DashboardPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-dvh bg-zinc-950 text-zinc-100">
+    <div dir="rtl" className="min-h-dvh bg-surface text-primary">
       {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
+      <header className="bg-card border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-medium flex items-center gap-2">
-            <HouseIcon size={24} className="text-blue-400" />
+          <h1 className="text-lg sm:text-xl font-medium flex items-center gap-2">
+            <HouseIcon size={24} className="text-link" />
             לוח בקרה
           </h1>
-          <p className="text-sm text-zinc-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-secondary mt-0.5">
             {user === "shared" ? "כל המשפחה" : USER_LABELS[user] || user}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={toggle}
+            className="text-sm text-muted hover:text-primary transition-colors p-1"
+            title={theme === "dark" ? "מצב בהיר" : "מצב כהה"}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
           <button
             onClick={() => {
               document.cookie = "home-manager-user=; Path=/; Max-Age=0; SameSite=Lax";
               window.location.href = "/select";
             }}
-            className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 px-3 py-1.5 rounded-full transition-colors"
+            className="text-xs bg-tag hover:bg-hover text-secondary px-2 sm:px-3 py-1.5 rounded-full transition-colors"
           >
-            החלף פרופיל
+            <span className="sm:hidden">👤</span>
+            <span className="hidden sm:inline">החלף פרופיל</span>
           </button>
           <Link
             href="/"
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-sm text-link hover:text-link-hover transition-colors"
           >
-            💬 חזרה לצ׳אט
+            <span className="sm:hidden">💬</span>
+            <span className="hidden sm:inline">💬 חזרה לצ׳אט</span>
           </Link>
         </div>
       </header>
 
       {/* Tabs */}
-      <div className="bg-zinc-900 border-b border-zinc-800 px-4 overflow-x-auto">
+      <div className="bg-card border-b border-border px-4 overflow-x-auto">
         <div className="flex gap-1 max-w-3xl mx-auto">
           {tabs.map((tab) => {
             const count = data?.[tab.key]?.length ?? 0;
@@ -280,8 +291,8 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === tab.key
-                    ? "border-blue-500 text-blue-400"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200"
+                    ? "border-blue-500 text-link"
+                    : "border-transparent text-secondary hover:text-primary"
                 }`}
               >
                 <span>{tab.icon}</span>
@@ -290,8 +301,8 @@ export default function DashboardPage() {
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded-full ${
                       activeTab === tab.key
-                        ? "bg-blue-900/50 text-blue-400"
-                        : "bg-zinc-800 text-zinc-400"
+                        ? "bg-badge-blue-bg text-badge-blue-text"
+                        : "bg-tag text-secondary"
                     }`}
                   >
                     {count}
@@ -305,7 +316,6 @@ export default function DashboardPage() {
 
       {/* Content */}
       <main className="max-w-3xl mx-auto p-4">
-        {/* Add button (hidden on Recent tab) */}
         {activeTab !== "recent" && (
           <div className="flex justify-end mb-4">
             <button
@@ -319,9 +329,9 @@ export default function DashboardPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-20 text-zinc-500">טוען...</div>
+          <div className="text-center py-20 text-muted">טוען...</div>
         ) : !data ? (
-          <div className="text-center py-20 text-zinc-500">שגיאה בטעינת נתונים</div>
+          <div className="text-center py-20 text-muted">שגיאה בטעינת נתונים</div>
         ) : (
           <>
             {/* ── Recent ── */}
@@ -335,19 +345,20 @@ export default function DashboardPage() {
                     return (
                       <div
                         key={`${item.type}-${item.id}`}
-                        className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm shadow-black/20 p-4"
+                        className="bg-card rounded-xl border border-border p-4"
+                        style={{ boxShadow: `0 1px 2px var(--color-shadow)` }}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">{item.label}</p>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              <span className="text-xs bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded-full">
+                              <span className="text-xs bg-badge-type-bg text-badge-type-text px-2 py-0.5 rounded-full">
                                 {info.icon} {info.label}
                               </span>
                               {item.detail && <Tag>{item.detail}</Tag>}
                             </div>
                           </div>
-                          <span className="text-xs text-zinc-500 whitespace-nowrap">
+                          <span className="text-xs text-muted whitespace-nowrap">
                             {formatDate(item.created_at)}
                           </span>
                         </div>
@@ -389,7 +400,7 @@ export default function DashboardPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium">{e.title}</p>
-                          <p className="text-sm text-zinc-400 mt-1">
+                          <p className="text-sm text-secondary mt-1">
                             {formatDate(e.event_date)}
                           </p>
                           <div className="flex flex-wrap gap-2 mt-2">
@@ -425,11 +436,11 @@ export default function DashboardPage() {
                       )
                     ).map(([category, items]) => (
                       <div key={category}>
-                        <p className="text-xs font-medium text-zinc-500 uppercase mb-2">
+                        <p className="text-xs font-medium text-muted uppercase mb-2">
                           {category}
                         </p>
-                        <div className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm shadow-black/20 p-4">
-                          <ul className="divide-y divide-zinc-800">
+                        <div className="bg-card rounded-xl border border-border p-4" style={{ boxShadow: `0 1px 2px var(--color-shadow)` }}>
+                          <ul className="divide-y divide-border">
                             {items.map((item) => (
                               <li
                                 key={item.id}
@@ -438,7 +449,7 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <input
                                     type="checkbox"
-                                    className="w-4 h-4 rounded border-zinc-600 text-blue-600 cursor-pointer"
+                                    className="w-4 h-4 rounded border-border text-blue-600 cursor-pointer"
                                     onChange={() =>
                                       handleQuickUpdate("shopping", item.id, {
                                         is_purchased: true,
@@ -448,7 +459,7 @@ export default function DashboardPage() {
                                   <span className="text-sm">{item.item_name}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="text-xs text-zinc-500 flex items-center gap-2">
+                                  <div className="text-xs text-muted flex items-center gap-2">
                                     {item.quantity && <span>{item.quantity}</span>}
                                     {item.store && <span>🏪 {item.store}</span>}
                                   </div>
@@ -480,7 +491,7 @@ export default function DashboardPage() {
                     ))}
                     <button
                       onClick={handleClearPurchased}
-                      className="w-full mt-3 text-sm text-zinc-500 hover:text-red-400 py-2 transition-colors"
+                      className="w-full mt-3 text-sm text-muted hover:text-red-500 py-2 transition-colors"
                     >
                       🧹 נקה פריטים שנקנו
                     </button>
@@ -520,7 +531,7 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium">{t.title}</p>
                           {t.description && (
-                            <p className="text-sm text-zinc-400 mt-1">{t.description}</p>
+                            <p className="text-sm text-secondary mt-1">{t.description}</p>
                           )}
                           <div className="flex flex-wrap gap-2 mt-2">
                             <span
@@ -541,7 +552,7 @@ export default function DashboardPage() {
                               onClick={() =>
                                 handleQuickUpdate("tasks", t.id, { status: "done" })
                               }
-                              className="text-xs text-green-400 hover:text-green-300"
+                              className="text-xs text-green-600 hover:text-green-500"
                             >
                               סמן כבוצע ✓
                             </button>
@@ -632,7 +643,6 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* Modal */}
       {modal && (
         <FormModal
           entity={modal.entity}
@@ -661,14 +671,14 @@ function Card({
   onDelete?: () => void;
 }) {
   return (
-    <div className="bg-zinc-900 rounded-xl border border-zinc-800 shadow-sm shadow-black/20 p-4 group">
+    <div className="bg-card rounded-xl border border-border p-4 group" style={{ boxShadow: `0 1px 2px var(--color-shadow)` }}>
       {children}
       {(onEdit || onDelete) && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-2 mt-3 pt-3 border-t border-border opacity-0 group-hover:opacity-100 transition-opacity">
           {onEdit && (
             <button
               onClick={onEdit}
-              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              className="text-xs text-link hover:text-link-hover flex items-center gap-1"
             >
               ✏️ עריכה
             </button>
@@ -676,7 +686,7 @@ function Card({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+              className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1"
             >
               🗑️ מחיקה
             </button>
@@ -699,10 +709,10 @@ function ActionButtons({
   const size = small ? "text-xs" : "text-sm";
   return (
     <div className="flex gap-1">
-      <button onClick={onEdit} className={`${size} text-blue-400 hover:text-blue-300 p-1`}>
+      <button onClick={onEdit} className={`${size} text-link hover:text-link-hover p-1`}>
         ✏️
       </button>
-      <button onClick={onDelete} className={`${size} text-red-400 hover:text-red-300 p-1`}>
+      <button onClick={onDelete} className={`${size} text-red-500 hover:text-red-400 p-1`}>
         🗑️
       </button>
     </div>
@@ -711,7 +721,7 @@ function ActionButtons({
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">
+    <span className="text-xs bg-tag text-secondary px-2 py-0.5 rounded-full">
       {children}
     </span>
   );
@@ -719,11 +729,11 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    scheduled: "bg-blue-900/50 text-blue-400",
-    completed: "bg-green-900/50 text-green-400",
-    cancelled: "bg-zinc-800 text-zinc-500",
-    pending: "bg-yellow-900/50 text-yellow-400",
-    in_progress: "bg-purple-900/50 text-purple-400",
+    scheduled: "bg-badge-blue-bg text-badge-blue-text",
+    completed: "bg-badge-green-bg text-badge-green-text",
+    cancelled: "bg-badge-neutral-bg text-badge-neutral-text",
+    pending: "bg-badge-yellow-bg text-badge-yellow-text",
+    in_progress: "bg-badge-purple-bg text-badge-purple-text",
   };
   return (
     <span
@@ -738,7 +748,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="text-center py-16 text-zinc-500">
+    <div className="text-center py-16 text-muted">
       <p className="text-lg">{text}</p>
     </div>
   );
@@ -902,7 +912,6 @@ function FormModal({
   const [form, setForm] = useState<Record<string, unknown>>(() => {
     if (!initial) return {};
     const v: Record<string, unknown> = { ...initial };
-    // Convert dates to local datetime-local format for inputs
     for (const f of fields) {
       if (f.type === "datetime" && v[f.key] && typeof v[f.key] === "string") {
         v[f.key] = toLocalDatetime(v[f.key] as string);
@@ -925,7 +934,6 @@ function FormModal({
 
     try {
       const payload = { ...form };
-      // Convert datetime-local values to ISO strings
       for (const f of fields) {
         if (f.type === "datetime" && payload[f.key]) {
           payload[f.key] = new Date(payload[f.key] as string).toISOString();
@@ -947,21 +955,21 @@ function FormModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-zinc-900 rounded-2xl shadow-xl shadow-black/30 w-full max-w-md max-h-[85vh] overflow-y-auto"
+        className="bg-card rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-lg font-medium">
             {mode === "create" ? `הוספת ${tabLabel}` : `עריכת ${tabLabel}`}
           </h2>
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-300 text-xl leading-none"
+            className="text-muted hover:text-primary text-xl leading-none"
           >
             ✕
           </button>
@@ -970,9 +978,9 @@ function FormModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {fields.map((field) => (
             <div key={field.key}>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-secondary mb-1">
                 {field.label}
-                {field.required && <span className="text-red-400 mr-1">*</span>}
+                {field.required && <span className="text-red-500 mr-1">*</span>}
               </label>
 
               {field.type === "select" ? (
@@ -982,7 +990,7 @@ function FormModal({
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
                   required={field.required}
-                  className="w-full border border-zinc-700 rounded-xl px-3 py-2.5 text-sm bg-zinc-800 text-zinc-100
+                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-sm bg-input text-primary
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">בחר...</option>
@@ -1000,9 +1008,9 @@ function FormModal({
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, [field.key]: e.target.checked }))
                     }
-                    className="w-4 h-4 rounded border-zinc-600 text-blue-600"
+                    className="w-4 h-4 rounded border-border text-blue-600"
                   />
-                  <span className="text-sm text-zinc-400">כן</span>
+                  <span className="text-sm text-secondary">כן</span>
                 </label>
               ) : (
                 <input
@@ -1018,7 +1026,7 @@ function FormModal({
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
                   required={field.required}
-                  className="w-full border border-zinc-700 rounded-xl px-3 py-2.5 text-sm bg-zinc-800 text-zinc-100
+                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-sm bg-input text-primary
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               )}
@@ -1026,7 +1034,7 @@ function FormModal({
           ))}
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-900/30 rounded-lg px-3 py-2">
+            <p className="text-sm text-red-500 bg-badge-red-bg rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -1035,7 +1043,7 @@ function FormModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700
+              className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-disabled
                          text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
             >
               {saving ? "שומר..." : mode === "create" ? "הוסף" : "שמור"}
@@ -1043,8 +1051,8 @@ function FormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 border border-zinc-700 rounded-xl text-sm text-zinc-400
-                         hover:bg-zinc-800 transition-colors"
+              className="px-6 py-2.5 border border-divider rounded-xl text-sm text-secondary
+                         hover:bg-hover transition-colors"
             >
               ביטול
             </button>

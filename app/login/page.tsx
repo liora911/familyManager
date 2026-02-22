@@ -39,12 +39,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div dir="rtl" className="flex items-center justify-center min-h-dvh bg-zinc-950 px-4">
+    <div dir="rtl" className="flex items-center justify-center min-h-dvh bg-surface px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-4">
         <div className="text-center space-y-2">
-          <HouseIcon size={64} className="text-blue-400 mx-auto" />
-          <h1 className="text-xl font-medium text-zinc-100">מנהל הבית</h1>
-          <p className="text-sm text-zinc-400">הזיני קוד גישה</p>
+          <HouseIcon size={64} className="text-link mx-auto" />
+          <h1 className="text-xl font-medium text-primary">מנהל הבית</h1>
+          <p className="text-sm text-secondary">הזיני קוד גישה</p>
         </div>
 
         <input
@@ -53,8 +53,8 @@ export default function LoginPage() {
           onChange={(e) => setPin(e.target.value)}
           placeholder="קוד גישה"
           autoFocus
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3
-                     text-zinc-100 placeholder-zinc-500 text-center text-lg tracking-widest
+          className="w-full bg-card border border-border rounded-xl px-4 py-3
+                     text-primary placeholder-muted text-center text-lg tracking-widest
                      focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={!pin.trim() || loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-disabled disabled:text-disabled-text
                      text-white font-medium px-6 py-3 rounded-xl transition-colors"
         >
           {loading ? "..." : "כניסה"}

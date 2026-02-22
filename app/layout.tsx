@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/app/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "מנהל הבית",
@@ -25,12 +26,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" className="dark">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.svg" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
+(function(){
+  var t=localStorage.getItem("theme")||"dark";
+  if(t==="dark") document.documentElement.classList.add("dark");
+  else document.documentElement.classList.remove("dark");
+})();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
 if(window.matchMedia("(display-mode: standalone)").matches){
   document.body.classList.add("pwa");
@@ -45,7 +51,9 @@ if(window.matchMedia("(display-mode: standalone)").matches){
           }}
         />
       </head>
-      <body className="antialiased bg-zinc-950 text-zinc-100">{children}</body>
+      <body className="antialiased bg-surface text-primary">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

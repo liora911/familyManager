@@ -37,7 +37,6 @@ export default function SelectPage() {
   const router = useRouter();
 
   const handleSelect = (key: string) => {
-    // Set user cookie — 30 days
     document.cookie = `home-manager-user=${key}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax`;
     router.push("/");
     router.refresh();
@@ -46,12 +45,12 @@ export default function SelectPage() {
   return (
     <div
       dir="rtl"
-      className="flex flex-col items-center justify-center min-h-dvh bg-zinc-950 px-4"
+      className="flex flex-col items-center justify-center min-h-dvh bg-surface px-4"
     >
       <div className="text-center mb-10">
-        <HouseIcon size={64} className="text-blue-400 mx-auto mb-3" />
-        <h1 className="text-2xl font-semibold text-zinc-100">מנהל הבית</h1>
-        <p className="text-zinc-400 mt-2">מי משתמש/ת?</p>
+        <HouseIcon size={64} className="text-link mx-auto mb-3" />
+        <h1 className="text-2xl font-semibold text-primary">מנהל הבית</h1>
+        <p className="text-secondary mt-2">מי משתמש/ת?</p>
       </div>
 
       <div className="flex gap-4 flex-wrap justify-center max-w-lg w-full">

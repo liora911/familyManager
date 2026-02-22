@@ -1,7 +1,119 @@
 @import "tailwindcss";
 
-html {
+/* ── Theme color tokens ─────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+  --color-surface: #f9fafb;
+  --color-card: #ffffff;
+  --color-input: #f9fafb;
+  --color-tag: #f3f4f6;
+  --color-hover: #e5e7eb;
+  --color-text-primary: #18181b;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-link: #2563eb;
+  --color-text-link-hover: #1d4ed8;
+  --color-border: #e5e7eb;
+  --color-divider: #e5e7eb;
+  --color-disabled-bg: #e5e7eb;
+  --color-disabled-text: #9ca3af;
+  --color-shadow: rgba(0, 0, 0, 0.05);
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  /* Status badges – light */
+  --color-badge-blue-bg: #dbeafe;
+  --color-badge-blue-text: #2563eb;
+  --color-badge-green-bg: #dcfce7;
+  --color-badge-green-text: #16a34a;
+  --color-badge-yellow-bg: #fef9c3;
+  --color-badge-yellow-text: #ca8a04;
+  --color-badge-purple-bg: #f3e8ff;
+  --color-badge-purple-text: #9333ea;
+  --color-badge-red-bg: #fee2e2;
+  --color-badge-red-text: #dc2626;
+  --color-badge-orange-bg: #ffedd5;
+  --color-badge-orange-text: #c2410c;
+  --color-badge-neutral-bg: #f3f4f6;
+  --color-badge-neutral-text: #6b7280;
+  --color-badge-type-bg: #eff6ff;
+  --color-badge-type-text: #2563eb;
+}
+
+:root.dark {
   color-scheme: dark;
+  --color-surface: #09090b;
+  --color-card: #18181b;
+  --color-input: #27272a;
+  --color-tag: #27272a;
+  --color-hover: #3f3f46;
+  --color-text-primary: #f4f4f5;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
+  --color-text-link: #60a5fa;
+  --color-text-link-hover: #93bbfd;
+  --color-border: #27272a;
+  --color-divider: #3f3f46;
+  --color-disabled-bg: #27272a;
+  --color-disabled-text: #52525b;
+  --color-shadow: rgba(0, 0, 0, 0.2);
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  /* Status badges – dark */
+  --color-badge-blue-bg: rgba(30, 58, 138, 0.5);
+  --color-badge-blue-text: #60a5fa;
+  --color-badge-green-bg: rgba(20, 83, 45, 0.5);
+  --color-badge-green-text: #4ade80;
+  --color-badge-yellow-bg: rgba(113, 63, 18, 0.5);
+  --color-badge-yellow-text: #facc15;
+  --color-badge-purple-bg: rgba(88, 28, 135, 0.5);
+  --color-badge-purple-text: #c084fc;
+  --color-badge-red-bg: rgba(127, 29, 29, 0.5);
+  --color-badge-red-text: #f87171;
+  --color-badge-orange-bg: rgba(124, 45, 18, 0.5);
+  --color-badge-orange-text: #fb923c;
+  --color-badge-neutral-bg: #27272a;
+  --color-badge-neutral-text: #a1a1aa;
+  --color-badge-type-bg: rgba(30, 58, 138, 0.5);
+  --color-badge-type-text: #60a5fa;
+}
+
+/* Register as Tailwind theme colors */
+@theme {
+  --color-surface: var(--color-surface);
+  --color-card: var(--color-card);
+  --color-input: var(--color-input);
+  --color-tag: var(--color-tag);
+  --color-hover: var(--color-hover);
+  --color-primary: var(--color-text-primary);
+  --color-secondary: var(--color-text-secondary);
+  --color-muted: var(--color-text-muted);
+  --color-link: var(--color-text-link);
+  --color-link-hover: var(--color-text-link-hover);
+  --color-border: var(--color-border);
+  --color-divider: var(--color-divider);
+  --color-disabled: var(--color-disabled-bg);
+  --color-disabled-text: var(--color-disabled-text);
+  --color-overlay: var(--color-overlay);
+  --color-badge-blue-bg: var(--color-badge-blue-bg);
+  --color-badge-blue-text: var(--color-badge-blue-text);
+  --color-badge-green-bg: var(--color-badge-green-bg);
+  --color-badge-green-text: var(--color-badge-green-text);
+  --color-badge-yellow-bg: var(--color-badge-yellow-bg);
+  --color-badge-yellow-text: var(--color-badge-yellow-text);
+  --color-badge-purple-bg: var(--color-badge-purple-bg);
+  --color-badge-purple-text: var(--color-badge-purple-text);
+  --color-badge-red-bg: var(--color-badge-red-bg);
+  --color-badge-red-text: var(--color-badge-red-text);
+  --color-badge-orange-bg: var(--color-badge-orange-bg);
+  --color-badge-orange-text: var(--color-badge-orange-text);
+  --color-badge-neutral-bg: var(--color-badge-neutral-bg);
+  --color-badge-neutral-text: var(--color-badge-neutral-text);
+  --color-badge-type-bg: var(--color-badge-type-bg);
+  --color-badge-type-text: var(--color-badge-type-text);
+}
+
+/* ── Global styles ──────────────────────────────────────── */
+
+html {
   overscroll-behavior-y: none;
 }
 
