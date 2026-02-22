@@ -20,9 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Register service worker
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js")
-        .then(r => alert("SW registered: " + r.scope))
-        .catch(e => alert("SW failed: " + e.message));
+      navigator.serviceWorker.register("/sw.js");
     }
 
     // PWA standalone tweaks
