@@ -134,48 +134,67 @@ export default function Home() {
   return (
     <div dir="rtl" className="flex flex-col h-dvh bg-zinc-950 text-zinc-100">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-zinc-800 bg-zinc-900 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-medium text-zinc-100 flex items-center gap-2">
-            <HouseIcon size={28} className="text-blue-400" />
-            מנהל הבית
-          </h1>
-          <p className="text-sm text-zinc-400 mt-0.5">
-            {user === "shared" ? "מצב משותף" : `שלום ${USER_LABELS[user] || user}`}
-          </p>
+      <header className="flex-shrink-0 border-b border-zinc-800 bg-zinc-900 px-3 sm:px-6 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <HouseIcon size={24} className="text-blue-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-medium text-zinc-100 truncate">מנהל הבית</h1>
+              <p className="text-xs sm:text-sm text-zinc-400">
+                {user === "shared" ? "מצב משותף" : `שלום ${USER_LABELS[user] || user}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {messages.length > 0 && (
+              <button
+                onClick={handleClearChat}
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors hidden sm:block"
+                title="נקה צ׳אט"
+              >
+                נקה צ׳אט
+              </button>
+            )}
+            <button
+              onClick={handleSwitchUser}
+              className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 px-2 sm:px-3 py-1.5 rounded-full transition-colors"
+              title="החלף פרופיל"
+            >
+              <span className="sm:hidden">👤</span>
+              <span className="hidden sm:inline">החלף פרופיל</span>
+            </button>
+            <Link
+              href="/dashboard"
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              title="לוח בקרה"
+            >
+              <span className="sm:hidden">📋</span>
+              <span className="hidden sm:inline">📋 לוח בקרה</span>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              title="יציאה"
+            >
+              יציאה
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {messages.length > 0 && (
+        {/* Mobile-only: clear chat button */}
+        {messages.length > 0 && (
+          <div className="sm:hidden mt-1.5 flex justify-end">
             <button
               onClick={handleClearChat}
               className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               נקה צ׳אט
             </button>
-          )}
-          <button
-            onClick={handleSwitchUser}
-            className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 px-3 py-1.5 rounded-full transition-colors"
-          >
-            החלף פרופיל
-          </button>
-          <Link
-            href="/dashboard"
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            📋 לוח בקרה
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            יציאה
-          </button>
-        </div>
+          </div>
+        )}
       </header>
 
       {/* Messages area */}
-      <main className="flex-1 overflow-y-auto px-4 py-6">
+      <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-zinc-500 mt-20 space-y-3">
@@ -239,8 +258,8 @@ export default function Home() {
       </main>
 
       {/* Input area */}
-      <footer className="flex-shrink-0 border-t border-zinc-800 bg-zinc-900 p-4">
-        <div className="max-w-2xl mx-auto flex gap-3 items-end">
+      <footer className="flex-shrink-0 border-t border-zinc-800 bg-zinc-900 p-3 sm:p-4">
+        <div className="max-w-2xl mx-auto flex gap-2 sm:gap-3 items-end">
           <input
             type="text"
             ref={inputRef}
@@ -248,7 +267,7 @@ export default function Home() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="תנעצי לי רופא עיניים לאיתן..."
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3
+            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 sm:px-4 py-3
                        text-zinc-100 placeholder-zinc-500
                        focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
                        text-sm"
@@ -257,7 +276,7 @@ export default function Home() {
             onClick={handleSubmit}
             disabled={!input.trim() || loading}
             className="bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600
-                       text-white font-medium px-6 py-3 rounded-xl transition-colors
+                       text-white font-medium px-4 sm:px-6 py-3 rounded-xl transition-colors
                        text-sm flex-shrink-0"
           >
             שגר 🚀
