@@ -2,4 +2,25 @@
 
 html {
   color-scheme: dark;
+  overscroll-behavior-y: none;
+}
+
+/* Remove tap highlight on mobile */
+button, a, label, input, select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* PWA-only: prevent accidental text selection */
+body.pwa {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow selection on text content areas */
+body.pwa .allow-select,
+body.pwa .allow-select *,
+body.pwa p.whitespace-pre-wrap,
+body.pwa .text-center {
+  user-select: text;
+  -webkit-user-select: text;
 }
