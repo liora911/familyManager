@@ -74,10 +74,18 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const history = messages.slice(-10).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const history = messages.slice(-10).map((m) => {
+        if (m.role === "assistant" && m.actions?.length) {
+          const actionsSummary = m.actions
+            .map((a) => `${a.tool}(${JSON.stringify(a.input)}) → ${JSON.stringify(a.result)}`)
+            .join("\n");
+          return {
+            role: m.role,
+            content: `${m.content}\n\n[פעולות שבוצעו:\n${actionsSummary}]`,
+          };
+        }
+        return { role: m.role, content: m.content };
+      });
 
       const res = await fetch("/api/chat", {
         method: "POST",
