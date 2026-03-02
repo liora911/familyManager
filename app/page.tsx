@@ -119,27 +119,13 @@ function Home() {
             </div>
           </div>
 
-          {/* Mobile drawer */}
+          {/* Mobile bottom-sheet drawer */}
           <DashboardDrawer
             isOpen={isDrawerOpen}
             onClose={() => setIsDrawerOpen(false)}
           >
             <DashboardPanel />
           </DashboardDrawer>
-
-          {/* Mobile FAB to open dashboard */}
-          {!isDesktop && !isDrawerOpen && (
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="fixed bottom-20 left-4 z-30 bg-blue-600 hover:bg-blue-500
-                         text-white w-12 h-12 rounded-full shadow-lg
-                         flex items-center justify-center text-xl
-                         transition-transform active:scale-95 lg:hidden"
-              title="דשבורד ניהול"
-            >
-              📋
-            </button>
-          )}
         </>
       )}
     </div>

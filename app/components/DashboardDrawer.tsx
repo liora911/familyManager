@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 export default function DashboardDrawer({
   isOpen,
@@ -11,12 +11,9 @@ export default function DashboardDrawer({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
-  // Reset to compact when closed
-  useEffect(() => {
-    if (!isOpen) setExpanded(false);
-  }, [isOpen]);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+  const currentY = useRef(0);
 
   // Close on Escape
   useEffect(() => {
@@ -40,6 +37,33 @@ export default function DashboardDrawer({
     };
   }, [isOpen]);
 
+  // Swipe-down to close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    currentY.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const delta = e.touches[0].clientY - startY.current;
+    currentY.current = delta;
+    const sheet = sheetRef.current;
+    if (sheet && delta > 0 && sheet.scrollTop <= 0) {
+      sheet.style.transform = `translateY(${delta}px)`;
+      sheet.style.transition = "none";
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    sheet.style.transition = "";
+    if (currentY.current > 100) {
+      onClose();
+    }
+    sheet.style.transform = "";
+    currentY.current = 0;
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -50,33 +74,35 @@ export default function DashboardDrawer({
         onClick={onClose}
       />
 
-      {/* Drawer panel — slides from left (secondary side in RTL) */}
+      {/* Bottom sheet — slides up from bottom, full width */}
       <div
+        ref={sheetRef}
         dir="rtl"
-        className={`fixed top-0 left-0 h-full z-50 bg-surface flex flex-col
-                    transition-all duration-300 ease-in-out lg:hidden
-                    ${expanded ? "w-full" : "w-[85vw] max-w-[400px]"}
-                    ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className={`fixed inset-x-0 bottom-0 z-50 bg-surface rounded-t-2xl flex flex-col
+                    transition-transform duration-300 ease-in-out lg:hidden
+                    ${isOpen ? "translate-y-0" : "translate-y-full"}`}
+        style={{ height: "92dvh", maxHeight: "92dvh" }}
       >
-        {/* Drawer toolbar */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="text-muted hover:text-primary text-xs px-3 py-1.5 rounded-lg
-                       bg-tag border border-border transition-colors"
-          >
-            ✕ סגור
-          </button>
-          <button
-            onClick={() => setExpanded((p) => !p)}
-            className="text-muted hover:text-primary text-xs px-3 py-1.5 rounded-lg
-                       bg-tag border border-border transition-colors"
-          >
-            {expanded ? "↙ צמצם" : "↗ הרחב"}
-          </button>
+        {/* Drag handle + close */}
+        <div className="flex-shrink-0 pt-2 pb-1 px-4">
+          <div className="w-10 h-1 bg-divider rounded-full mx-auto mb-2" />
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-secondary">דשבורד ניהול</h2>
+            <button
+              onClick={onClose}
+              className="text-muted hover:text-primary text-xs px-3 py-1.5 rounded-lg
+                         bg-tag border border-border transition-colors"
+            >
+              ✕ סגור
+            </button>
+          </div>
         </div>
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           {children}
         </div>
       </div>
