@@ -101,28 +101,12 @@ export async function GET(req: NextRequest) {
           ORDER BY r.remind_at ASC`,
     ]);
 
-    // Recently added items across all types (last 7 days)
-    // Show the relevant date (event_date, due_date, remind_at) instead of created_at
-    const recent = await sql`
-      SELECT id, title as label, category as detail, 'event' as type, created_at, event_date as relevant_date FROM events
-        WHERE created_at >= NOW() - INTERVAL '7 days'
-      UNION ALL
-      SELECT id, title as label, priority as detail, 'task' as type, created_at, due_date as relevant_date FROM tasks
-        WHERE created_at >= NOW() - INTERVAL '7 days'
-      UNION ALL
-      SELECT id, item_name as label, category as detail, 'shopping' as type, created_at, created_at as relevant_date FROM shopping_items
-        WHERE created_at >= NOW() - INTERVAL '7 days'
-      UNION ALL
-      SELECT id, message as label, NULL as detail, 'reminder' as type, created_at, remind_at as relevant_date FROM reminders
-        WHERE created_at >= NOW() - INTERVAL '7 days'
-      UNION ALL
-      SELECT id, name as label, dosage as detail, 'medication' as type, created_at, created_at as relevant_date FROM medications
-        WHERE created_at >= NOW() - INTERVAL '7 days'
-      ORDER BY created_at DESC
-      LIMIT 30
+    const keys = await sql`
+      SELECT * FROM keys
+      ORDER BY category, name
     `;
 
-    return NextResponse.json({ events, tasks, shopping, reminders, medications, recent });
+    return NextResponse.json({ events, tasks, shopping, reminders, medications, keys });
   } catch (err) {
     console.error("Dashboard error:", err);
     return NextResponse.json({ error: "Failed to load dashboard" }, { status: 500 });

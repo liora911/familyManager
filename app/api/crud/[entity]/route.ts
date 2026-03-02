@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications"] as const;
+const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications", "keys"] as const;
 type Entity = (typeof VALID_ENTITIES)[number];
 
 // Resolve family member name → UUID
@@ -82,6 +82,16 @@ export async function POST(
           INSERT INTO medications (name, for_member_id, dosage, frequency, start_date, end_date, notes)
           VALUES (${body.name}, ${memberId}, ${body.dosage || null}, ${body.frequency || null},
                   ${body.start_date || null}, ${body.end_date || null}, ${body.notes || null})
+          RETURNING *
+        `;
+        return json({ success: true, item: row });
+      }
+
+      case "keys": {
+        const [row] = await sql`
+          INSERT INTO keys (name, value, category, location, notes)
+          VALUES (${body.name}, ${body.value}, ${body.category || "other"},
+                  ${body.location || null}, ${body.notes || null})
           RETURNING *
         `;
         return json({ success: true, item: row });
@@ -189,6 +199,20 @@ export async function PUT(
         `;
         return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
       }
+
+      case "keys": {
+        const [row] = await sql`
+          UPDATE keys SET
+            name = COALESCE(${fields.name || null}, name),
+            value = COALESCE(${fields.value || null}, value),
+            category = COALESCE(${fields.category || null}, category),
+            location = COALESCE(${fields.location ?? null}, location),
+            notes = COALESCE(${fields.notes ?? null}, notes)
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+      }
     }
   } catch (error) {
     console.error(`CRUD PUT ${entity}:`, error);
@@ -224,6 +248,7 @@ export async function DELETE(
       shopping: "shopping_items",
       reminders: "reminders",
       medications: "medications",
+      keys: "keys",
     };
 
     // Cascade: delete reminders linked to event

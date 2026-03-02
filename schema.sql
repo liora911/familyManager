@@ -83,6 +83,16 @@ CREATE TABLE medications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  value TEXT NOT NULL,
+  category TEXT DEFAULT 'other',
+  location TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Seed family members
 INSERT INTO family_members (name, nickname, role, birth_date) VALUES
   ('ירין', 'ירין', 'parent', '1994-01-01'),
