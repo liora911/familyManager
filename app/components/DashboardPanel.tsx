@@ -114,13 +114,55 @@ function formatShortDate(dateStr: string) {
   return d.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
 }
 
+// ── Expired section ──────────────────────────────────────────────────
+
+function isPast(dateStr: string | undefined | null): boolean {
+  if (!dateStr) return false;
+  return new Date(dateStr) < new Date();
+}
+
+function ExpiredSection({
+  count,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  count: number;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="mt-4 pt-3 border-t border-border">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 text-xs text-muted hover:text-secondary transition-colors mb-2 w-full"
+      >
+        <span>{isOpen ? "▾" : "◂"}</span>
+        <span>עבר ({count})</span>
+      </button>
+      {isOpen && <div className="space-y-2 opacity-60">{children}</div>}
+    </div>
+  );
+}
+
 // ── DashboardPanel ──────────────────────────────────────────────────
 
-export default function DashboardPanel({ className }: { className?: string }) {
+export default function DashboardPanel({
+  className,
+  expanded,
+  onToggleExpand,
+}: {
+  className?: string;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+}) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("events");
   const [eventsView, setEventsView] = useState<"list" | "calendar">("list");
+  const [showExpired, setShowExpired] = useState(false);
   const [modal, setModal] = useState<{
     entity: string;
     mode: "create" | "edit";
@@ -186,11 +228,33 @@ export default function DashboardPanel({ className }: { className?: string }) {
 
   return (
     <div className={`flex flex-col h-full ${className || ""}`}>
+      {/* Panel toolbar */}
+      {onToggleExpand && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card flex-shrink-0">
+          <button
+            onClick={onToggleExpand}
+            className="text-muted hover:text-primary text-xs px-2.5 py-1 rounded-lg
+                       bg-tag border border-border transition-colors"
+          >
+            {expanded ? "↙ צמצם" : "↗ הרחב"}
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="bg-card border-b border-border px-2 overflow-x-auto flex-shrink-0">
         <div className="flex gap-0.5">
           {tabs.map((tab) => {
-            const count = data?.[tab.key]?.length ?? 0;
+            const count = (() => {
+              if (!data) return 0;
+              switch (tab.key) {
+                case "events": return data.events.filter((e) => !isPast(e.event_date) || e.status !== "scheduled").length;
+                case "tasks": return data.tasks.filter((t) => !isPast(t.due_date)).length;
+                case "reminders": return data.reminders.filter((r) => !isPast(r.remind_at)).length;
+                case "medications": return data.medications.filter((m) => !m.end_date || !isPast(m.end_date)).length;
+                default: return data[tab.key]?.length ?? 0;
+              }
+            })();
             return (
               <button
                 key={tab.key}
@@ -275,10 +339,10 @@ export default function DashboardPanel({ className }: { className?: string }) {
                       })
                     }
                   />
-                ) : data.events.length === 0 ? (
-                  <Empty text="אין אירועים קרובים" />
-                ) : (
-                  data.events.map((e) => (
+                ) : (() => {
+                  const active = data.events.filter((e) => !isPast(e.event_date) || e.status !== "scheduled");
+                  const expired = data.events.filter((e) => isPast(e.event_date) && e.status === "scheduled");
+                  const renderEvent = (e: Event) => (
                     <Card
                       key={e.id}
                       onEdit={() =>
@@ -286,15 +350,9 @@ export default function DashboardPanel({ className }: { className?: string }) {
                           entity: "events",
                           mode: "edit",
                           initial: {
-                            id: e.id,
-                            title: e.title,
-                            description: e.description,
-                            category: e.category,
-                            event_date: e.event_date,
-                            end_date: e.end_date,
-                            location: e.location,
-                            member_name: e.member_name,
-                            status: e.status,
+                            id: e.id, title: e.title, description: e.description,
+                            category: e.category, event_date: e.event_date, end_date: e.end_date,
+                            location: e.location, member_name: e.member_name, status: e.status,
                           },
                         })
                       }
@@ -303,9 +361,7 @@ export default function DashboardPanel({ className }: { className?: string }) {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm">{e.title}</p>
-                          <p className="text-xs text-secondary mt-1">
-                            {formatDate(e.event_date)}
-                          </p>
+                          <p className="text-xs text-secondary mt-1">{formatDate(e.event_date)}</p>
                           <div className="flex flex-wrap gap-1.5 mt-1.5">
                             {e.member_name && <Tag>{e.member_name}</Tag>}
                             {e.contact_name && <Tag>{e.contact_name}</Tag>}
@@ -315,8 +371,17 @@ export default function DashboardPanel({ className }: { className?: string }) {
                         <StatusBadge status={e.status} />
                       </div>
                     </Card>
-                  ))
-                )}
+                  );
+                  return (
+                    <>
+                      {active.length === 0 && expired.length === 0 && <Empty text="אין אירועים קרובים" />}
+                      {active.map(renderEvent)}
+                      <ExpiredSection count={expired.length} isOpen={showExpired} onToggle={() => setShowExpired((p) => !p)}>
+                        {expired.map(renderEvent)}
+                      </ExpiredSection>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -406,10 +471,10 @@ export default function DashboardPanel({ className }: { className?: string }) {
             {/* ── Tasks ── */}
             {activeTab === "tasks" && (
               <div className="space-y-2">
-                {data.tasks.length === 0 ? (
-                  <Empty text="אין משימות פתוחות 🎉" />
-                ) : (
-                  data.tasks.map((t) => (
+                {(() => {
+                  const active = data.tasks.filter((t) => !isPast(t.due_date));
+                  const expired = data.tasks.filter((t) => isPast(t.due_date));
+                  const renderTask = (t: Task) => (
                     <Card
                       key={t.id}
                       onEdit={() =>
@@ -417,14 +482,9 @@ export default function DashboardPanel({ className }: { className?: string }) {
                           entity: "tasks",
                           mode: "edit",
                           initial: {
-                            id: t.id,
-                            title: t.title,
-                            description: t.description,
-                            category: t.category,
-                            priority: t.priority,
-                            status: t.status,
-                            due_date: t.due_date,
-                            assigned_to_name: t.assigned_name,
+                            id: t.id, title: t.title, description: t.description,
+                            category: t.category, priority: t.priority, status: t.status,
+                            due_date: t.due_date, assigned_to_name: t.assigned_name,
                           },
                         })
                       }
@@ -437,11 +497,7 @@ export default function DashboardPanel({ className }: { className?: string }) {
                             <p className="text-xs text-secondary mt-1">{t.description}</p>
                           )}
                           <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full ${
-                                priorityColors[t.priority] || priorityColors.medium
-                              }`}
-                            >
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[t.priority] || priorityColors.medium}`}>
                               {priorityLabels[t.priority] || t.priority}
                             </span>
                             {t.assigned_name && <Tag>{t.assigned_name}</Tag>}
@@ -452,9 +508,7 @@ export default function DashboardPanel({ className }: { className?: string }) {
                           <StatusBadge status={t.status} />
                           {t.status === "pending" && (
                             <button
-                              onClick={() =>
-                                handleQuickUpdate("tasks", t.id, { status: "done" })
-                              }
+                              onClick={() => handleQuickUpdate("tasks", t.id, { status: "done" })}
                               className="text-xs text-green-600 hover:text-green-500"
                             >
                               סמן כבוצע ✓
@@ -463,18 +517,27 @@ export default function DashboardPanel({ className }: { className?: string }) {
                         </div>
                       </div>
                     </Card>
-                  ))
-                )}
+                  );
+                  return (
+                    <>
+                      {active.length === 0 && expired.length === 0 && <Empty text="אין משימות פתוחות 🎉" />}
+                      {active.map(renderTask)}
+                      <ExpiredSection count={expired.length} isOpen={showExpired} onToggle={() => setShowExpired((p) => !p)}>
+                        {expired.map(renderTask)}
+                      </ExpiredSection>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
             {/* ── Reminders ── */}
             {activeTab === "reminders" && (
               <div className="space-y-2">
-                {data.reminders.length === 0 ? (
-                  <Empty text="אין תזכורות ממתינות" />
-                ) : (
-                  data.reminders.map((r) => (
+                {(() => {
+                  const active = data.reminders.filter((r) => !isPast(r.remind_at));
+                  const expired = data.reminders.filter((r) => isPast(r.remind_at));
+                  const renderReminder = (r: Reminder) => (
                     <Card
                       key={r.id}
                       onEdit={() =>
@@ -482,11 +545,8 @@ export default function DashboardPanel({ className }: { className?: string }) {
                           entity: "reminders",
                           mode: "edit",
                           initial: {
-                            id: r.id,
-                            message: r.message,
-                            remind_at: r.remind_at,
-                            is_recurring: r.is_recurring,
-                            recurrence_rule: r.recurrence_rule,
+                            id: r.id, message: r.message, remind_at: r.remind_at,
+                            is_recurring: r.is_recurring, recurrence_rule: r.recurrence_rule,
                           },
                         })
                       }
@@ -499,18 +559,27 @@ export default function DashboardPanel({ className }: { className?: string }) {
                         {r.is_recurring && <Tag>🔄 {r.recurrence_rule || "חוזר"}</Tag>}
                       </div>
                     </Card>
-                  ))
-                )}
+                  );
+                  return (
+                    <>
+                      {active.length === 0 && expired.length === 0 && <Empty text="אין תזכורות ממתינות" />}
+                      {active.map(renderReminder)}
+                      <ExpiredSection count={expired.length} isOpen={showExpired} onToggle={() => setShowExpired((p) => !p)}>
+                        {expired.map(renderReminder)}
+                      </ExpiredSection>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
             {/* ── Medications ── */}
             {activeTab === "medications" && (
               <div className="space-y-2">
-                {data.medications.length === 0 ? (
-                  <Empty text="אין תרופות רשומות" />
-                ) : (
-                  data.medications.map((m) => (
+                {(() => {
+                  const active = data.medications.filter((m) => !m.end_date || !isPast(m.end_date));
+                  const expired = data.medications.filter((m) => m.end_date && isPast(m.end_date));
+                  const renderMed = (m: Medication) => (
                     <Card
                       key={m.id}
                       onEdit={() =>
@@ -518,13 +587,8 @@ export default function DashboardPanel({ className }: { className?: string }) {
                           entity: "medications",
                           mode: "edit",
                           initial: {
-                            id: m.id,
-                            name: m.name,
-                            dosage: m.dosage,
-                            frequency: m.frequency,
-                            start_date: m.start_date,
-                            end_date: m.end_date,
-                            notes: m.notes,
+                            id: m.id, name: m.name, dosage: m.dosage, frequency: m.frequency,
+                            start_date: m.start_date, end_date: m.end_date, notes: m.notes,
                             for_member_name: m.member_name,
                           },
                         })
@@ -538,8 +602,17 @@ export default function DashboardPanel({ className }: { className?: string }) {
                         {m.member_name && <Tag>{m.member_name}</Tag>}
                       </div>
                     </Card>
-                  ))
-                )}
+                  );
+                  return (
+                    <>
+                      {active.length === 0 && expired.length === 0 && <Empty text="אין תרופות רשומות" />}
+                      {active.map(renderMed)}
+                      <ExpiredSection count={expired.length} isOpen={showExpired} onToggle={() => setShowExpired((p) => !p)}>
+                        {expired.map(renderMed)}
+                      </ExpiredSection>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -586,6 +659,7 @@ export default function DashboardPanel({ className }: { className?: string }) {
                 )}
               </div>
             )}
+
           </>
         )}
       </div>

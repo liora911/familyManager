@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications", "keys"] as const;
+const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications", "keys", "inventory", "insurance", "finance", "cv", "notebook"] as const;
 type Entity = (typeof VALID_ENTITIES)[number];
 
 // Resolve family member name → UUID
@@ -92,6 +92,68 @@ export async function POST(
           INSERT INTO keys (name, value, category, location, notes)
           VALUES (${body.name}, ${body.value}, ${body.category || "other"},
                   ${body.location || null}, ${body.notes || null})
+          RETURNING *
+        `;
+        return json({ success: true, item: row });
+      }
+
+      case "inventory": {
+        const specs = body.specs ? JSON.stringify(body.specs) : "{}";
+        const attachments = body.attachments ? JSON.stringify(body.attachments) : "[]";
+        const [row] = await sql`
+          INSERT INTO inventory (name, category, sub_category, brand, model, serial_number, location, purchase_date, warranty_expiry, cost, notes, specs, attachments)
+          VALUES (${body.name}, ${body.category || "appliance"}, ${body.sub_category || null},
+                  ${body.brand || null}, ${body.model || null}, ${body.serial_number || null},
+                  ${body.location || null}, ${body.purchase_date || null}, ${body.warranty_expiry || null},
+                  ${body.cost || null}, ${body.notes || null}, ${specs}::jsonb, ${attachments}::jsonb)
+          RETURNING *
+        `;
+        return json({ success: true, item: row });
+      }
+
+      case "insurance": {
+        const memberId = body.insured_member_name ? await resolveMember(body.insured_member_name) : null;
+        const attachments = body.attachments ? JSON.stringify(body.attachments) : "[]";
+        const [row] = await sql`
+          INSERT INTO insurance_policies (title, category, provider, policy_number, insured_member_id, start_date, end_date, monthly_cost, contact_phone, contact_name, notes, attachments)
+          VALUES (${body.title}, ${body.category || "general"}, ${body.provider || null},
+                  ${body.policy_number || null}, ${memberId}, ${body.start_date || null},
+                  ${body.end_date || null}, ${body.monthly_cost || null}, ${body.contact_phone || null},
+                  ${body.contact_name || null}, ${body.notes || null}, ${attachments}::jsonb)
+          RETURNING *
+        `;
+        return json({ success: true, item: row });
+      }
+
+      case "finance": {
+        const memberId = body.related_member_name ? await resolveMember(body.related_member_name) : null;
+        const attachments = body.attachments ? JSON.stringify(body.attachments) : "[]";
+        const [row] = await sql`
+          INSERT INTO finance_records (title, category, amount, currency, record_date, is_recurring, recurrence_rule, related_member_id, notes, attachments)
+          VALUES (${body.title}, ${body.category || "expense"}, ${body.amount},
+                  ${body.currency || "ILS"}, ${body.record_date || null}, ${body.is_recurring || false},
+                  ${body.recurrence_rule || null}, ${memberId}, ${body.notes || null}, ${attachments}::jsonb)
+          RETURNING *
+        `;
+        return json({ success: true, item: row });
+      }
+
+      case "cv": {
+        const memberId = body.member_name ? await resolveMember(body.member_name) : null;
+        const [row] = await sql`
+          INSERT INTO cv_sections (member_id, section_type, title, organization, start_date, end_date, is_current, description, sort_order)
+          VALUES (${memberId}, ${body.section_type || "other"}, ${body.title},
+                  ${body.organization || null}, ${body.start_date || null}, ${body.end_date || null},
+                  ${body.is_current || false}, ${body.description || null}, ${body.sort_order || 0})
+          RETURNING *
+        `;
+        return json({ success: true, item: row });
+      }
+
+      case "notebook": {
+        const [row] = await sql`
+          INSERT INTO notebook_entries (title, content, category, is_pinned)
+          VALUES (${body.title || null}, ${body.content}, ${body.category || "general"}, ${body.is_pinned || false})
           RETURNING *
         `;
         return json({ success: true, item: row });
@@ -213,6 +275,107 @@ export async function PUT(
         `;
         return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
       }
+
+      case "inventory": {
+        const specs = fields.specs ? JSON.stringify(fields.specs) : null;
+        const attachments = fields.attachments !== undefined ? JSON.stringify(fields.attachments) : null;
+        const [row] = await sql`
+          UPDATE inventory SET
+            name = COALESCE(${fields.name || null}, name),
+            category = COALESCE(${fields.category || null}, category),
+            sub_category = COALESCE(${fields.sub_category ?? null}, sub_category),
+            brand = COALESCE(${fields.brand ?? null}, brand),
+            model = COALESCE(${fields.model ?? null}, model),
+            serial_number = COALESCE(${fields.serial_number ?? null}, serial_number),
+            location = COALESCE(${fields.location ?? null}, location),
+            purchase_date = COALESCE(${fields.purchase_date || null}::date, purchase_date),
+            warranty_expiry = COALESCE(${fields.warranty_expiry || null}::date, warranty_expiry),
+            cost = COALESCE(${fields.cost ?? null}, cost),
+            notes = COALESCE(${fields.notes ?? null}, notes),
+            specs = COALESCE(${specs}::jsonb, specs),
+            attachments = COALESCE(${attachments}::jsonb, attachments)
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+      }
+
+      case "insurance": {
+        const memberId = fields.insured_member_name ? await resolveMember(fields.insured_member_name) : undefined;
+        const attachments = fields.attachments !== undefined ? JSON.stringify(fields.attachments) : null;
+        const [row] = await sql`
+          UPDATE insurance_policies SET
+            title = COALESCE(${fields.title || null}, title),
+            category = COALESCE(${fields.category || null}, category),
+            provider = COALESCE(${fields.provider ?? null}, provider),
+            policy_number = COALESCE(${fields.policy_number ?? null}, policy_number),
+            insured_member_id = COALESCE(${memberId || null}, insured_member_id),
+            start_date = COALESCE(${fields.start_date || null}::date, start_date),
+            end_date = COALESCE(${fields.end_date || null}::date, end_date),
+            monthly_cost = COALESCE(${fields.monthly_cost ?? null}, monthly_cost),
+            contact_phone = COALESCE(${fields.contact_phone ?? null}, contact_phone),
+            contact_name = COALESCE(${fields.contact_name ?? null}, contact_name),
+            notes = COALESCE(${fields.notes ?? null}, notes),
+            attachments = COALESCE(${attachments}::jsonb, attachments)
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+      }
+
+      case "finance": {
+        const memberId = fields.related_member_name ? await resolveMember(fields.related_member_name) : undefined;
+        const attachments = fields.attachments !== undefined ? JSON.stringify(fields.attachments) : null;
+        const [row] = await sql`
+          UPDATE finance_records SET
+            title = COALESCE(${fields.title || null}, title),
+            category = COALESCE(${fields.category || null}, category),
+            amount = COALESCE(${fields.amount || null}, amount),
+            currency = COALESCE(${fields.currency || null}, currency),
+            record_date = COALESCE(${fields.record_date || null}::date, record_date),
+            is_recurring = COALESCE(${fields.is_recurring ?? null}, is_recurring),
+            recurrence_rule = COALESCE(${fields.recurrence_rule ?? null}, recurrence_rule),
+            related_member_id = COALESCE(${memberId || null}, related_member_id),
+            notes = COALESCE(${fields.notes ?? null}, notes),
+            attachments = COALESCE(${attachments}::jsonb, attachments)
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+      }
+
+      case "cv": {
+        const memberId = fields.member_name ? await resolveMember(fields.member_name) : undefined;
+        const [row] = await sql`
+          UPDATE cv_sections SET
+            member_id = COALESCE(${memberId || null}, member_id),
+            section_type = COALESCE(${fields.section_type || null}, section_type),
+            title = COALESCE(${fields.title || null}, title),
+            organization = COALESCE(${fields.organization ?? null}, organization),
+            start_date = COALESCE(${fields.start_date || null}::date, start_date),
+            end_date = COALESCE(${fields.end_date || null}::date, end_date),
+            is_current = COALESCE(${fields.is_current ?? null}, is_current),
+            description = COALESCE(${fields.description ?? null}, description),
+            sort_order = COALESCE(${fields.sort_order ?? null}, sort_order)
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+      }
+
+      case "notebook": {
+        const [row] = await sql`
+          UPDATE notebook_entries SET
+            title = COALESCE(${fields.title ?? null}, title),
+            content = COALESCE(${fields.content || null}, content),
+            category = COALESCE(${fields.category || null}, category),
+            is_pinned = COALESCE(${fields.is_pinned ?? null}, is_pinned),
+            updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+      }
     }
   } catch (error) {
     console.error(`CRUD PUT ${entity}:`, error);
@@ -249,6 +412,11 @@ export async function DELETE(
       reminders: "reminders",
       medications: "medications",
       keys: "keys",
+      inventory: "inventory",
+      insurance: "insurance_policies",
+      finance: "finance_records",
+      cv: "cv_sections",
+      notebook: "notebook_entries",
     };
 
     // Cascade: delete reminders linked to event

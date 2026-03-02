@@ -101,12 +101,27 @@ export async function GET(req: NextRequest) {
           ORDER BY r.remind_at ASC`,
     ]);
 
-    const keys = await sql`
-      SELECT * FROM keys
-      ORDER BY category, name
-    `;
+    const [keys, inventory, insurance, finance, cvSections, notebook] = await Promise.all([
+      sql`SELECT * FROM keys ORDER BY category, name`,
+      sql`SELECT * FROM inventory ORDER BY category, name`,
+      sql`SELECT ip.*, fm.name as member_name
+          FROM insurance_policies ip
+          LEFT JOIN family_members fm ON ip.insured_member_id = fm.id
+          ORDER BY ip.end_date ASC NULLS LAST`,
+      sql`SELECT fr.*, fm.name as member_name
+          FROM finance_records fr
+          LEFT JOIN family_members fm ON fr.related_member_id = fm.id
+          ORDER BY fr.record_date DESC
+          LIMIT 100`,
+      sql`SELECT cs.*, fm.name as member_name
+          FROM cv_sections cs
+          LEFT JOIN family_members fm ON cs.member_id = fm.id
+          ORDER BY cs.member_id, cs.section_type, cs.sort_order`,
+      sql`SELECT * FROM notebook_entries
+          ORDER BY is_pinned DESC, created_at DESC`,
+    ]);
 
-    return NextResponse.json({ events, tasks, shopping, reminders, medications, keys });
+    return NextResponse.json({ events, tasks, shopping, reminders, medications, keys, inventory, insurance, finance, cv: cvSections, notebook });
   } catch (err) {
     console.error("Dashboard error:", err);
     return NextResponse.json({ error: "Failed to load dashboard" }, { status: 500 });

@@ -36,8 +36,16 @@ ${USER_CONTEXT[user] || USER_CONTEXT.shared}
 - אם חסר מידע קריטי אחר שאל, אבל נסה להסיק כמה שאפשר מהקונטקסט
 - הצג תוצאות בצורה קריאה ונעימה
 - כשאין אירועים/משימות, אמור בצורה ידידותית שאין כלום ולא צריך לדאוג
-- השתמש באימוג'ים כדי להפוך את התשובות ליותר נעימות (📅 לאירועים, ✅ למשימות, 🛒 לקניות, 💊 לתרופות)
-- תאריכים: תמיד העבר תאריכים בפורמט ISO 8601 עם אזור זמן ישראל (+02:00). לדוגמה: 2026-02-23T20:00:00+02:00. אל תשתמש ב-Z (UTC). חשב נכון "מחר", "השבוע", "שבוע הבא", "חודש הבא"`;
+- השתמש באימוג'ים כדי להפוך את התשובות ליותר נעימות (📅 לאירועים, ✅ למשימות, 🛒 לקניות, 💊 לתרופות, 🔑 למפתחות, 🏠 למלאי, 🛡️ לביטוח, 💰 לכספים, 📄 לקורות חיים, 📓 למחברת)
+- תאריכים: תמיד העבר תאריכים בפורמט ISO 8601 עם אזור זמן ישראל (+02:00). לדוגמה: 2026-02-23T20:00:00+02:00. אל תשתמש ב-Z (UTC). חשב נכון "מחר", "השבוע", "שבוע הבא", "חודש הבא"
+
+יכולות נוספות:
+- מפתחות וקודים: "שמור סיסמה", "מה הקוד של", "מה ה-WiFi" = save_key / list_keys
+- מלאי הבית: "רשום את המקרר", "מה יש לנו בבית" = add_inventory_item / list_inventory
+- ביטוח: "הוסף ביטוח", "מתי נגמר הביטוח", "הראה פוליסות" = add_insurance / list_insurance
+- כספים: "הוסף הוצאה", "כמה הוצאנו", "הכנסה של" = add_finance_record / list_finance
+- קורות חיים: "הוסף ניסיון עבודה", "הראה קורות חיים" = add_cv_section / list_cv
+- מחברת: "רשום", "תכתוב לי", "רעיון:", "מה רשמתי" = add_notebook_entry / list_notebook`;
 
 export const TOOLS = [
   // === EVENTS ===
@@ -356,6 +364,278 @@ export const TOOLS = [
         },
       },
       required: ["query_type"],
+    },
+  },
+
+  // === KEYS ===
+  {
+    name: "save_key",
+    description:
+      "Save a key, password, code, or secret (WiFi password, door code, safe combination, etc.)",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Name/label for the key" },
+        value: {
+          type: "string",
+          description: "The actual code/password/value",
+        },
+        category: {
+          type: "string",
+          enum: ["wifi", "door_code", "safe", "password", "physical_key", "other"],
+        },
+        location: { type: "string", description: "Where it is / where it's used" },
+        notes: { type: "string" },
+      },
+      required: ["name", "value"],
+    },
+  },
+  {
+    name: "list_keys",
+    description:
+      "List all saved keys, passwords, and codes. Use when user asks 'what is the WiFi password' or 'show me all codes'",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        category: {
+          type: "string",
+          enum: ["wifi", "door_code", "safe", "password", "physical_key", "other"],
+        },
+        search_term: { type: "string", description: "Search by name" },
+      },
+    },
+  },
+  {
+    name: "delete_key",
+    description: "Delete a saved key/code by ID",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        key_id: { type: "string" },
+      },
+      required: ["key_id"],
+    },
+  },
+
+  // === INVENTORY ===
+  {
+    name: "add_inventory_item",
+    description:
+      "Add an item to the home inventory (appliance, furniture, electronics, etc.)",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Item name" },
+        category: {
+          type: "string",
+          enum: ["appliance", "electronics", "furniture", "plumbing", "outdoor", "other"],
+        },
+        sub_category: { type: "string", description: "Specific type (e.g. fridge, tv, sofa)" },
+        brand: { type: "string" },
+        model: { type: "string" },
+        serial_number: { type: "string" },
+        location: { type: "string", description: "Location in the house" },
+        purchase_date: { type: "string", description: "ISO date" },
+        warranty_expiry: { type: "string", description: "ISO date" },
+        cost: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "list_inventory",
+    description:
+      "List home inventory items. Use when user asks 'what appliances do we have', 'show the home inventory'",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        category: { type: "string" },
+        search_term: { type: "string" },
+      },
+    },
+  },
+
+  // === INSURANCE ===
+  {
+    name: "add_insurance",
+    description:
+      "Add an insurance policy (health, car, home, life, travel)",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string", description: "Policy name" },
+        category: {
+          type: "string",
+          enum: ["health", "car", "home", "life", "travel", "general"],
+        },
+        provider: { type: "string", description: "Insurance company" },
+        policy_number: { type: "string" },
+        insured_member_name: {
+          type: "string",
+          description: "Family member name: ירין, תותי, איתן, גפן",
+        },
+        start_date: { type: "string", description: "ISO date" },
+        end_date: { type: "string", description: "ISO date" },
+        monthly_cost: { type: "string" },
+        contact_name: { type: "string" },
+        contact_phone: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "list_insurance",
+    description:
+      "List insurance policies. Use when user asks about insurance, expiry dates, policy details",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        category: {
+          type: "string",
+          enum: ["health", "car", "home", "life", "travel", "general"],
+        },
+        member_name: { type: "string" },
+      },
+    },
+  },
+
+  // === FINANCE ===
+  {
+    name: "add_finance_record",
+    description:
+      "Add a financial record (income, expense, investment, savings, debt)",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string", description: "Description of the record" },
+        category: {
+          type: "string",
+          enum: ["income", "expense", "investment", "savings", "debt", "other"],
+        },
+        amount: { type: "string", description: "Amount as string" },
+        currency: { type: "string", enum: ["ILS", "USD", "EUR"], description: "Defaults to ILS" },
+        record_date: { type: "string", description: "ISO date" },
+        is_recurring: { type: "boolean" },
+        recurrence_rule: { type: "string", enum: ["monthly", "quarterly", "yearly"] },
+        related_member_name: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["title", "amount"],
+    },
+  },
+  {
+    name: "list_finance",
+    description:
+      "List financial records. Use for 'how much did we spend', 'show expenses', 'income summary'",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        category: {
+          type: "string",
+          enum: ["income", "expense", "investment", "savings", "debt", "other"],
+        },
+        from_date: { type: "string", description: "ISO date" },
+        to_date: { type: "string", description: "ISO date" },
+        member_name: { type: "string" },
+      },
+    },
+  },
+
+  // === CV ===
+  {
+    name: "add_cv_section",
+    description:
+      "Add a section to a family member's CV/resume (education, experience, skill, language, certification)",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        member_name: {
+          type: "string",
+          description: "Family member: ירין, תותי, איתן, גפן",
+        },
+        section_type: {
+          type: "string",
+          enum: ["personal", "education", "experience", "skill", "language", "certification", "other"],
+        },
+        title: { type: "string" },
+        organization: { type: "string" },
+        start_date: { type: "string", description: "ISO date" },
+        end_date: { type: "string", description: "ISO date" },
+        is_current: { type: "boolean" },
+        description: { type: "string" },
+      },
+      required: ["member_name", "section_type", "title"],
+    },
+  },
+  {
+    name: "list_cv",
+    description:
+      "List CV/resume sections for a family member",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        member_name: { type: "string" },
+        section_type: {
+          type: "string",
+          enum: ["personal", "education", "experience", "skill", "language", "certification", "other"],
+        },
+      },
+    },
+  },
+
+  // === NOTEBOOK ===
+  {
+    name: "add_notebook_entry",
+    description:
+      "Write a note, idea, thought, dream, or any free text to the personal notebook",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string", description: "Optional title" },
+        content: { type: "string", description: "The note content" },
+        category: {
+          type: "string",
+          enum: ["general", "idea", "dream", "reflection", "list", "other"],
+        },
+        is_pinned: { type: "boolean" },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "list_notebook",
+    description:
+      "List notebook entries. Use for 'what did I write', 'show my notes', 'what ideas did I save'",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        category: {
+          type: "string",
+          enum: ["general", "idea", "dream", "reflection", "list", "other"],
+        },
+        search_term: { type: "string" },
+        pinned_only: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "update_notebook_entry",
+    description: "Update an existing notebook entry",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        entry_id: { type: "string" },
+        title: { type: "string" },
+        content: { type: "string" },
+        category: {
+          type: "string",
+          enum: ["general", "idea", "dream", "reflection", "list", "other"],
+        },
+        is_pinned: { type: "boolean" },
+      },
+      required: ["entry_id"],
     },
   },
 ];

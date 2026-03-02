@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 export default function DashboardDrawer({
   isOpen,
@@ -11,6 +11,13 @@ export default function DashboardDrawer({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Reset to compact when closed
+  useEffect(() => {
+    if (!isOpen) setExpanded(false);
+  }, [isOpen]);
+
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -45,20 +52,31 @@ export default function DashboardDrawer({
 
       {/* Drawer panel — slides from left (secondary side in RTL) */}
       <div
-        className={`fixed top-0 left-0 h-full w-[85vw] max-w-[400px] z-50 bg-surface
-                    transition-transform duration-300 ease-in-out lg:hidden
+        dir="rtl"
+        className={`fixed top-0 left-0 h-full z-50 bg-surface flex flex-col
+                    transition-all duration-300 ease-in-out lg:hidden
+                    ${expanded ? "w-full" : "w-[85vw] max-w-[400px]"}
                     ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 text-muted hover:text-primary
-                     bg-card border border-border rounded-full w-8 h-8
-                     flex items-center justify-center text-sm"
-        >
-          ✕
-        </button>
-        <div className="h-full overflow-y-auto">
+        {/* Drawer toolbar */}
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-primary text-xs px-3 py-1.5 rounded-lg
+                       bg-tag border border-border transition-colors"
+          >
+            ✕ סגור
+          </button>
+          <button
+            onClick={() => setExpanded((p) => !p)}
+            className="text-muted hover:text-primary text-xs px-3 py-1.5 rounded-lg
+                       bg-tag border border-border transition-colors"
+          >
+            {expanded ? "↙ צמצם" : "↗ הרחב"}
+          </button>
+        </div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
           {children}
         </div>
       </div>

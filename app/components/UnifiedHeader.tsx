@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import HouseIcon from "@/app/components/HouseIcon";
 import { useTheme } from "@/app/components/ThemeProvider";
 
@@ -15,12 +16,14 @@ export default function UnifiedHeader({
   hasMessages,
   onTogglePanel,
   onClearChat,
+  onOpenInventory,
 }: {
   user: string;
   isPanelOpen: boolean;
   hasMessages: boolean;
   onTogglePanel: () => void;
   onClearChat: () => void;
+  onOpenInventory?: () => void;
 }) {
   const { theme, toggle } = useTheme();
 
@@ -76,6 +79,24 @@ export default function UnifiedHeader({
             <span className="sm:hidden">👤</span>
             <span className="hidden sm:inline">החלף פרופיל</span>
           </button>
+          {onOpenInventory && (
+            <button
+              onClick={onOpenInventory}
+              className="text-lg sm:text-sm p-2 sm:px-3 sm:py-1.5 rounded-full transition-colors text-muted hover:text-primary"
+              title="מלאי הבית"
+            >
+              <span className="sm:hidden">🏠</span>
+              <span className="hidden sm:inline">🏠 מלאי הבית</span>
+            </button>
+          )}
+          <Link
+            href="/resources"
+            className="text-lg sm:text-sm p-2 sm:px-3 sm:py-1.5 rounded-full transition-colors text-muted hover:text-primary"
+            title="משאבים"
+          >
+            <span className="sm:hidden">📁</span>
+            <span className="hidden sm:inline">📁 משאבים</span>
+          </Link>
           <button
             onClick={onTogglePanel}
             className={`text-lg sm:text-sm p-2 sm:px-3 sm:py-1.5 rounded-full transition-colors ${
@@ -83,10 +104,10 @@ export default function UnifiedHeader({
                 ? "text-link bg-badge-blue-bg"
                 : "text-muted hover:text-primary"
             }`}
-            title={isPanelOpen ? "סגור לוח בקרה" : "פתח לוח בקרה"}
+            title={isPanelOpen ? "דשבורד סגור" : "דשבורד פתוח"}
           >
             <span className="sm:hidden">📋</span>
-            <span className="hidden sm:inline">📋 לוח בקרה</span>
+            <span className="hidden sm:inline">📋 דשבורד ניהול</span>
           </button>
           <button
             onClick={handleLogout}

@@ -426,6 +426,308 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
       return { error: "Unknown query type" };
     }
 
+    // ── KEYS ────────────────────────────────────────────────────────────
+
+    case "save_key": {
+      // Check if key with same name exists, update if so
+      const [existing] = await sql`
+        SELECT id FROM keys WHERE name = ${input.name} LIMIT 1
+      `;
+      if (existing) {
+        const [updated] = await sql`
+          UPDATE keys SET
+            value = ${input.value},
+            category = COALESCE(${input.category || null}, category),
+            location = COALESCE(${input.location || null}, location),
+            notes = COALESCE(${input.notes || null}, notes)
+          WHERE id = ${existing.id}
+          RETURNING *
+        `;
+        return { success: true, key: updated, action: "updated" };
+      }
+      const [key] = await sql`
+        INSERT INTO keys (name, value, category, location, notes)
+        VALUES (${input.name}, ${input.value}, ${input.category || "other"},
+                ${input.location || null}, ${input.notes || null})
+        RETURNING *
+      `;
+      return { success: true, key, action: "created" };
+    }
+
+    case "list_keys": {
+      let query = `SELECT * FROM keys WHERE 1=1`;
+      const params: unknown[] = [];
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND category = $${params.length}`;
+      }
+      if (input.search_term) {
+        params.push(`%${input.search_term}%`);
+        query += ` AND name ILIKE $${params.length}`;
+      }
+      query += ` ORDER BY category, name`;
+      const rows = await sql(query, params);
+      return { keys: rows };
+    }
+
+    case "delete_key": {
+      const [deleted] = await sql`
+        DELETE FROM keys WHERE id = ${input.key_id} RETURNING id
+      `;
+      return deleted
+        ? { success: true }
+        : { success: false, error: "Key not found" };
+    }
+
+    // ── INVENTORY ───────────────────────────────────────────────────────
+
+    case "add_inventory_item": {
+      const [item] = await sql`
+        INSERT INTO inventory (name, category, sub_category, brand, model, serial_number,
+                              location, purchase_date, warranty_expiry, cost, notes)
+        VALUES (${input.name}, ${input.category || "other"}, ${input.sub_category || null},
+                ${input.brand || null}, ${input.model || null}, ${input.serial_number || null},
+                ${input.location || null}, ${input.purchase_date || null},
+                ${input.warranty_expiry || null}, ${input.cost || null}, ${input.notes || null})
+        RETURNING *
+      `;
+      return { success: true, item };
+    }
+
+    case "list_inventory": {
+      let query = `SELECT * FROM inventory WHERE 1=1`;
+      const params: unknown[] = [];
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND category = $${params.length}`;
+      }
+      if (input.search_term) {
+        params.push(`%${input.search_term}%`);
+        query += ` AND (name ILIKE $${params.length} OR brand ILIKE $${params.length} OR model ILIKE $${params.length})`;
+      }
+      query += ` ORDER BY category, name`;
+      const rows = await sql(query, params);
+      return { items: rows };
+    }
+
+    // ── INSURANCE ───────────────────────────────────────────────────────
+
+    case "add_insurance": {
+      let memberId = null;
+      if (input.insured_member_name) {
+        const [m] = await sql`
+          SELECT id FROM family_members
+          WHERE name = ${input.insured_member_name} OR nickname = ${input.insured_member_name}
+          LIMIT 1
+        `;
+        memberId = m?.id || null;
+      }
+      const [policy] = await sql`
+        INSERT INTO insurance_policies (title, category, provider, policy_number, insured_member_id,
+                                       start_date, end_date, monthly_cost, contact_phone, contact_name, notes)
+        VALUES (${input.title}, ${input.category || "general"}, ${input.provider || null},
+                ${input.policy_number || null}, ${memberId}, ${input.start_date || null},
+                ${input.end_date || null}, ${input.monthly_cost || null},
+                ${input.contact_phone || null}, ${input.contact_name || null}, ${input.notes || null})
+        RETURNING *
+      `;
+      return { success: true, policy };
+    }
+
+    case "list_insurance": {
+      let memberId = null;
+      if (input.member_name) {
+        const [m] = await sql`
+          SELECT id FROM family_members
+          WHERE name = ${input.member_name} OR nickname = ${input.member_name}
+          LIMIT 1
+        `;
+        memberId = m?.id || null;
+      }
+      let query = `
+        SELECT ip.*, fm.name as member_name
+        FROM insurance_policies ip
+        LEFT JOIN family_members fm ON ip.insured_member_id = fm.id
+        WHERE 1=1
+      `;
+      const params: unknown[] = [];
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND ip.category = $${params.length}`;
+      }
+      if (memberId) {
+        params.push(memberId);
+        query += ` AND ip.insured_member_id = $${params.length}`;
+      }
+      query += ` ORDER BY ip.end_date ASC NULLS LAST`;
+      const rows = await sql(query, params);
+      return { policies: rows };
+    }
+
+    // ── FINANCE ─────────────────────────────────────────────────────────
+
+    case "add_finance_record": {
+      let memberId = null;
+      if (input.related_member_name) {
+        const [m] = await sql`
+          SELECT id FROM family_members
+          WHERE name = ${input.related_member_name} OR nickname = ${input.related_member_name}
+          LIMIT 1
+        `;
+        memberId = m?.id || null;
+      }
+      const [record] = await sql`
+        INSERT INTO finance_records (title, category, amount, currency, record_date,
+                                    is_recurring, recurrence_rule, related_member_id, notes)
+        VALUES (${input.title}, ${input.category || "expense"}, ${input.amount},
+                ${input.currency || "ILS"}, ${input.record_date || null},
+                ${input.is_recurring || false}, ${input.recurrence_rule || null},
+                ${memberId}, ${input.notes || null})
+        RETURNING *
+      `;
+      return { success: true, record };
+    }
+
+    case "list_finance": {
+      let memberId = null;
+      if (input.member_name) {
+        const [m] = await sql`
+          SELECT id FROM family_members
+          WHERE name = ${input.member_name} OR nickname = ${input.member_name}
+          LIMIT 1
+        `;
+        memberId = m?.id || null;
+      }
+      let query = `
+        SELECT fr.*, fm.name as member_name
+        FROM finance_records fr
+        LEFT JOIN family_members fm ON fr.related_member_id = fm.id
+        WHERE 1=1
+      `;
+      const params: unknown[] = [];
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND fr.category = $${params.length}`;
+      }
+      if (input.from_date) {
+        params.push(input.from_date);
+        query += ` AND fr.record_date >= $${params.length}`;
+      }
+      if (input.to_date) {
+        params.push(input.to_date);
+        query += ` AND fr.record_date <= $${params.length}`;
+      }
+      if (memberId) {
+        params.push(memberId);
+        query += ` AND fr.related_member_id = $${params.length}`;
+      }
+      query += ` ORDER BY fr.record_date DESC LIMIT 100`;
+      const rows = await sql(query, params);
+      return { records: rows };
+    }
+
+    // ── CV ───────────────────────────────────────────────────────────────
+
+    case "add_cv_section": {
+      let memberId = null;
+      if (input.member_name) {
+        const [m] = await sql`
+          SELECT id FROM family_members
+          WHERE name = ${input.member_name} OR nickname = ${input.member_name}
+          LIMIT 1
+        `;
+        memberId = m?.id || null;
+      }
+      const [section] = await sql`
+        INSERT INTO cv_sections (member_id, section_type, title, organization,
+                                start_date, end_date, is_current, description)
+        VALUES (${memberId}, ${input.section_type}, ${input.title},
+                ${input.organization || null}, ${input.start_date || null},
+                ${input.end_date || null}, ${input.is_current || false},
+                ${input.description || null})
+        RETURNING *
+      `;
+      return { success: true, section };
+    }
+
+    case "list_cv": {
+      let memberId = null;
+      if (input.member_name) {
+        const [m] = await sql`
+          SELECT id FROM family_members
+          WHERE name = ${input.member_name} OR nickname = ${input.member_name}
+          LIMIT 1
+        `;
+        memberId = m?.id || null;
+      }
+      let query = `
+        SELECT cs.*, fm.name as member_name
+        FROM cv_sections cs
+        LEFT JOIN family_members fm ON cs.member_id = fm.id
+        WHERE 1=1
+      `;
+      const params: unknown[] = [];
+      if (memberId) {
+        params.push(memberId);
+        query += ` AND cs.member_id = $${params.length}`;
+      }
+      if (input.section_type) {
+        params.push(input.section_type);
+        query += ` AND cs.section_type = $${params.length}`;
+      }
+      query += ` ORDER BY cs.member_id, cs.section_type, cs.sort_order`;
+      const rows = await sql(query, params);
+      return { sections: rows };
+    }
+
+    // ── NOTEBOOK ────────────────────────────────────────────────────────
+
+    case "add_notebook_entry": {
+      const [entry] = await sql`
+        INSERT INTO notebook_entries (title, content, category, is_pinned)
+        VALUES (${input.title || null}, ${input.content}, ${input.category || "general"},
+                ${input.is_pinned || false})
+        RETURNING *
+      `;
+      return { success: true, entry };
+    }
+
+    case "list_notebook": {
+      let query = `SELECT * FROM notebook_entries WHERE 1=1`;
+      const params: unknown[] = [];
+      if (input.category) {
+        params.push(input.category);
+        query += ` AND category = $${params.length}`;
+      }
+      if (input.search_term) {
+        params.push(`%${input.search_term}%`);
+        query += ` AND (title ILIKE $${params.length} OR content ILIKE $${params.length})`;
+      }
+      if (input.pinned_only) {
+        query += ` AND is_pinned = true`;
+      }
+      query += ` ORDER BY is_pinned DESC, created_at DESC`;
+      const rows = await sql(query, params);
+      return { entries: rows };
+    }
+
+    case "update_notebook_entry": {
+      const { entry_id, ...fields } = input;
+      const [updated] = await sql`
+        UPDATE notebook_entries SET
+          title = COALESCE(${fields.title ?? null}, title),
+          content = COALESCE(${fields.content || null}, content),
+          category = COALESCE(${fields.category || null}, category),
+          is_pinned = COALESCE(${fields.is_pinned ?? null}, is_pinned),
+          updated_at = NOW()
+        WHERE id = ${entry_id}
+        RETURNING *
+      `;
+      return updated
+        ? { success: true, entry: updated }
+        : { success: false, error: "Entry not found" };
+    }
+
     default:
       return { error: `Unknown tool: ${name}` };
   }

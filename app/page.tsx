@@ -6,6 +6,7 @@ import UnifiedHeader from "@/app/components/UnifiedHeader";
 import ChatPanel, { type ChatPanelHandle } from "@/app/components/ChatPanel";
 import DashboardPanel from "@/app/components/DashboardPanel";
 import DashboardDrawer from "@/app/components/DashboardDrawer";
+import InventoryView from "@/app/components/InventoryView";
 
 function getUser(): string {
   const match = document.cookie.match(/home-manager-user=(\w+)/);
@@ -14,10 +15,15 @@ function getUser(): string {
 
 const PANEL_STORAGE_KEY = "dashboard-panel-open";
 
+const PANEL_WIDTH = 380;
+const PANEL_WIDTH_EXPANDED = 700;
+
 function Home() {
   const [user, setUser] = useState("shared");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [hasMessages, setHasMessages] = useState(false);
   const chatRef = useRef<ChatPanelHandle>(null);
@@ -74,41 +80,67 @@ function Home() {
         hasMessages={hasMessages}
         onTogglePanel={handleTogglePanel}
         onClearChat={handleClearChat}
+        onOpenInventory={() => setShowInventory(true)}
       />
 
-      <div className="flex-1 overflow-hidden flex">
-        {/* Chat — always visible, takes remaining space */}
-        <ChatPanel ref={chatRef} className="flex-1 min-w-0" user={user} />
-
-        {/* Dashboard panel — desktop only, collapsible */}
-        <div
-          className="hidden lg:block overflow-hidden border-r border-border flex-shrink-0
-                     transition-[width] duration-300 ease-in-out"
-          style={{ width: isPanelOpen ? "380px" : "0px" }}
-        >
-          <div className="w-[380px] h-full">
-            <DashboardPanel />
-          </div>
+      {showInventory ? (
+        <div className="flex-1 overflow-hidden">
+          <InventoryView onClose={() => setShowInventory(false)} />
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex-1 overflow-hidden flex">
+            {/* Chat — always visible, takes remaining space */}
+            <ChatPanel ref={chatRef} className="flex-1 min-w-0" user={user} />
 
-      {/* Mobile drawer */}
-      <DashboardDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)}>
-        <DashboardPanel />
-      </DashboardDrawer>
+            {/* Dashboard panel — desktop only, collapsible */}
+            <div
+              className="hidden lg:block overflow-hidden border-r border-border flex-shrink-0
+                         transition-[width] duration-300 ease-in-out"
+              style={{
+                width: isPanelOpen
+                  ? isPanelExpanded
+                    ? PANEL_WIDTH_EXPANDED
+                    : PANEL_WIDTH
+                  : 0,
+              }}
+            >
+              <div
+                className="h-full"
+                style={{
+                  width: isPanelExpanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH,
+                }}
+              >
+                <DashboardPanel
+                  expanded={isPanelExpanded}
+                  onToggleExpand={() => setIsPanelExpanded((p) => !p)}
+                />
+              </div>
+            </div>
+          </div>
 
-      {/* Mobile FAB to open dashboard */}
-      {!isDesktop && !isDrawerOpen && (
-        <button
-          onClick={() => setIsDrawerOpen(true)}
-          className="fixed bottom-20 left-4 z-30 bg-blue-600 hover:bg-blue-500
-                     text-white w-12 h-12 rounded-full shadow-lg
-                     flex items-center justify-center text-xl
-                     transition-transform active:scale-95 lg:hidden"
-          title="לוח בקרה"
-        >
-          📋
-        </button>
+          {/* Mobile drawer */}
+          <DashboardDrawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+          >
+            <DashboardPanel />
+          </DashboardDrawer>
+
+          {/* Mobile FAB to open dashboard */}
+          {!isDesktop && !isDrawerOpen && (
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              className="fixed bottom-20 left-4 z-30 bg-blue-600 hover:bg-blue-500
+                         text-white w-12 h-12 rounded-full shadow-lg
+                         flex items-center justify-center text-xl
+                         transition-transform active:scale-95 lg:hidden"
+              title="דשבורד ניהול"
+            >
+              📋
+            </button>
+          )}
+        </>
       )}
     </div>
   );
