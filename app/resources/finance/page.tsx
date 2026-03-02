@@ -18,6 +18,14 @@ interface FinanceRecord {
   attachments?: { url: string; filename: string; label?: string }[];
 }
 
+interface Aggregates {
+  total_income: number;
+  total_expense: number;
+  total_investment: number;
+  total_savings: number;
+  record_count: number;
+}
+
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   income: { label: "הכנסה", color: "text-green-500 bg-green-500/10 border-green-500/30" },
   expense: { label: "הוצאה", color: "text-red-500 bg-red-500/10 border-red-500/30" },
@@ -37,37 +45,219 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("he-IL", {
     day: "numeric",
     month: "short",
-    year: "numeric",
   });
 }
 
-function formatMonth(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("he-IL", {
+function getCurrentMonth() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthLabel(monthStr: string) {
+  const [year, month] = monthStr.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("he-IL", {
     month: "long",
     year: "numeric",
   });
 }
 
+// ── Month Navigator ────────────────────────────────────────────────
+
+function MonthNavigator({
+  currentMonth,
+  onChange,
+}: {
+  currentMonth: string;
+  onChange: (month: string) => void;
+}) {
+  const [year, month] = currentMonth.split("-").map(Number);
+
+  const goTo = (delta: number) => {
+    const d = new Date(year, month - 1 + delta, 1);
+    onChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  };
+
+  const isCurrent = currentMonth === getCurrentMonth();
+
+  return (
+    <div className="flex items-center justify-center gap-2 py-3">
+      <button
+        onClick={() => goTo(1)}
+        className="p-2 rounded-lg hover:bg-hover text-secondary hover:text-primary transition-colors text-lg"
+        aria-label="חודש הבא"
+      >
+        ‹
+      </button>
+      <span className="text-base font-medium min-w-[150px] text-center">
+        {formatMonthLabel(currentMonth)}
+      </span>
+      <button
+        onClick={() => goTo(-1)}
+        className="p-2 rounded-lg hover:bg-hover text-secondary hover:text-primary transition-colors text-lg"
+        aria-label="חודש קודם"
+      >
+        ›
+      </button>
+      {!isCurrent && (
+        <button
+          onClick={() => onChange(getCurrentMonth())}
+          className="text-xs text-link hover:text-link-hover px-2 py-1 rounded-lg hover:bg-hover transition-colors"
+        >
+          היום
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Record Card ────────────────────────────────────────────────────
+
+function RecordCard({
+  r,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: {
+  r: FinanceRecord;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  const catConf = CATEGORY_CONFIG[r.category] || CATEGORY_CONFIG.other;
+  const sym = CURRENCY_SYMBOL[r.currency] || r.currency;
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-3">
+      {/* Row 1: Badge + recurring + amount */}
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${catConf.color}`}>
+            {catConf.label}
+          </span>
+          {r.is_recurring && <span className="text-xs text-muted">🔄</span>}
+        </div>
+        <span
+          className={`text-sm font-bold ${
+            r.category === "income"
+              ? "text-green-500"
+              : r.category === "expense"
+                ? "text-red-500"
+                : "text-primary"
+          }`}
+        >
+          {r.category === "income" ? "+" : r.category === "expense" ? "-" : ""}
+          {sym}
+          {parseFloat(r.amount).toLocaleString()}
+        </span>
+      </div>
+
+      {/* Row 2: Title */}
+      <p className="font-medium text-sm">{r.title}</p>
+
+      {/* Row 3: Meta + actions */}
+      <div className="flex items-center justify-between mt-1.5">
+        <div className="flex flex-wrap gap-2 text-xs text-secondary">
+          {r.record_date && <span>{formatDate(r.record_date)}</span>}
+          {r.is_recurring && r.recurrence_rule && (
+            <span className="text-muted">🔄 {r.recurrence_rule === "monthly" ? "חודשי" : r.recurrence_rule === "quarterly" ? "רבעוני" : r.recurrence_rule === "yearly" ? "שנתי" : r.recurrence_rule}</span>
+          )}
+          {r.member_name && <span>👤 {r.member_name}</span>}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={onEdit}
+            className="text-xs text-muted hover:text-primary p-1 rounded-lg hover:bg-hover transition-colors"
+            title="ערוך"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={onDuplicate}
+            className="text-xs text-muted hover:text-blue-500 p-1 rounded-lg hover:bg-hover transition-colors"
+            title="שכפל"
+          >
+            📋
+          </button>
+          <button
+            onClick={onDelete}
+            className="text-xs text-muted hover:text-red-500 p-1 rounded-lg hover:bg-hover transition-colors"
+            title="מחק"
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+
+      {/* Row 4: Notes */}
+      {r.notes && <p className="text-xs text-muted mt-1 truncate">{r.notes}</p>}
+
+      {/* Row 5: Attachments */}
+      {r.attachments && r.attachments.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {r.attachments.map((att, i) => (
+            <a
+              key={i}
+              href={att.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-link hover:underline bg-tag px-2 py-0.5 rounded-full"
+            >
+              📎 {att.label || att.filename}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────
+
 export default function FinancePage() {
   const router = useRouter();
-  const [items, setItems] = useState<FinanceRecord[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(getCurrentMonth);
+  const [records, setRecords] = useState<FinanceRecord[]>([]);
+  const [recurring, setRecurring] = useState<FinanceRecord[]>([]);
+  const [aggregates, setAggregates] = useState<Aggregates>({
+    total_income: 0,
+    total_expense: 0,
+    total_investment: 0,
+    total_savings: 0,
+    record_count: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
+  const [recurringOpen, setRecurringOpen] = useState(false);
   const [modal, setModal] = useState<{
     mode: "create" | "edit";
     initial?: Record<string, unknown>;
   } | null>(null);
 
   const refresh = useCallback(() => {
-    fetch("/api/dashboard")
+    setLoading(true);
+    fetch(`/api/finance?month=${currentMonth}`)
       .then((r) => r.json())
-      .then((d) => setItems(d.finance || []))
+      .then((data) => {
+        setRecords(data.records || []);
+        setRecurring(data.recurring || []);
+        setAggregates(
+          data.aggregates || {
+            total_income: 0,
+            total_expense: 0,
+            total_investment: 0,
+            total_savings: 0,
+            record_count: 0,
+          }
+        );
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [currentMonth]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const handleDelete = async (id: string, label: string) => {
     if (!confirm(`למחוק את "${label}"?`)) return;
@@ -79,7 +269,43 @@ export default function FinancePage() {
     }
   };
 
-  const filtered = items.filter((r) => {
+  const openEdit = (r: FinanceRecord) => {
+    setModal({
+      mode: "edit",
+      initial: {
+        id: r.id,
+        title: r.title,
+        category: r.category,
+        amount: r.amount,
+        currency: r.currency,
+        record_date: r.record_date,
+        is_recurring: r.is_recurring,
+        recurrence_rule: r.recurrence_rule,
+        related_member_name: r.member_name,
+        notes: r.notes,
+        attachments: r.attachments,
+      },
+    });
+  };
+
+  const openDuplicate = (r: FinanceRecord) => {
+    setModal({
+      mode: "create",
+      initial: {
+        title: r.title,
+        category: r.category,
+        amount: r.amount,
+        currency: r.currency,
+        is_recurring: r.is_recurring,
+        recurrence_rule: r.recurrence_rule,
+        related_member_name: r.member_name,
+        notes: r.notes,
+      },
+    });
+  };
+
+  // Client-side filter on monthly records
+  const filtered = records.filter((r) => {
     if (filterCat && r.category !== filterCat) return false;
     if (search) {
       const s = search.toLowerCase();
@@ -92,27 +318,18 @@ export default function FinancePage() {
     return true;
   });
 
-  // Monthly summary
-  const summary = filtered.reduce(
-    (acc, r) => {
-      const amt = parseFloat(r.amount) || 0;
-      if (r.category === "income") acc.income += amt;
-      else if (r.category === "expense") acc.expense += amt;
-      return acc;
-    },
-    { income: 0, expense: 0 }
-  );
+  const income = Number(aggregates.total_income);
+  const expense = Number(aggregates.total_expense);
+  const balance = income - expense;
 
-  // Group by month
-  const grouped = filtered.reduce<Record<string, FinanceRecord[]>>((acc, r) => {
-    const month = r.record_date ? formatMonth(r.record_date) : "ללא תאריך";
-    if (!acc[month]) acc[month] = [];
-    acc[month].push(r);
-    return acc;
-  }, {});
+  // Recurring monthly total (expenses only)
+  const recurringTotal = recurring
+    .filter((r) => r.category === "expense")
+    .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
 
   return (
     <div dir="rtl" className="min-h-dvh bg-surface text-primary">
+      {/* Header */}
       <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -131,35 +348,83 @@ export default function FinancePage() {
             onClick={() => setModal({ mode: "create" })}
             className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
           >
-            + הוסף רשומה
+            + הוסף
           </button>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-4 sm:p-6">
-        {/* Summary */}
-        {!loading && filtered.length > 0 && (
+        {/* Month Navigator */}
+        <MonthNavigator currentMonth={currentMonth} onChange={setCurrentMonth} />
+
+        {/* Summary Cards */}
+        {!loading && (
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center">
               <p className="text-xs text-green-500 mb-1">הכנסות</p>
-              <p className="text-lg font-bold text-green-500">₪{summary.income.toLocaleString()}</p>
+              <p className="text-lg font-bold text-green-500">
+                ₪{income.toLocaleString()}
+              </p>
             </div>
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
               <p className="text-xs text-red-500 mb-1">הוצאות</p>
-              <p className="text-lg font-bold text-red-500">₪{summary.expense.toLocaleString()}</p>
-            </div>
-            <div className={`rounded-xl p-3 text-center border ${
-              summary.income - summary.expense >= 0
-                ? "bg-blue-500/10 border-blue-500/30"
-                : "bg-orange-500/10 border-orange-500/30"
-            }`}>
-              <p className="text-xs text-secondary mb-1">מאזן</p>
-              <p className={`text-lg font-bold ${
-                summary.income - summary.expense >= 0 ? "text-blue-500" : "text-orange-500"
-              }`}>
-                ₪{(summary.income - summary.expense).toLocaleString()}
+              <p className="text-lg font-bold text-red-500">
+                ₪{expense.toLocaleString()}
               </p>
             </div>
+            <div
+              className={`rounded-xl p-3 text-center border ${
+                balance >= 0
+                  ? "bg-blue-500/10 border-blue-500/30"
+                  : "bg-orange-500/10 border-orange-500/30"
+              }`}
+            >
+              <p className="text-xs text-secondary mb-1">מאזן</p>
+              <p
+                className={`text-lg font-bold ${
+                  balance >= 0 ? "text-blue-500" : "text-orange-500"
+                }`}
+              >
+                ₪{balance.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Recurring Expenses Section */}
+        {recurring.length > 0 && (
+          <div className="mb-4">
+            <button
+              onClick={() => setRecurringOpen(!recurringOpen)}
+              className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium hover:bg-hover transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span>🔄</span>
+                <span>הוצאות קבועות</span>
+                <span className="text-xs text-muted">({recurring.length})</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-red-500 font-bold">
+                  ₪{recurringTotal.toLocaleString()}/חודש
+                </span>
+                <span className="text-muted text-xs">
+                  {recurringOpen ? "▾" : "◂"}
+                </span>
+              </div>
+            </button>
+            {recurringOpen && (
+              <div className="mt-2 space-y-2">
+                {recurring.map((r) => (
+                  <RecordCard
+                    key={r.id}
+                    r={r}
+                    onEdit={() => openEdit(r)}
+                    onDuplicate={() => openDuplicate(r)}
+                    onDelete={() => handleDelete(r.id, r.title)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -180,86 +445,35 @@ export default function FinancePage() {
           >
             <option value="">הכל</option>
             {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
-              <option key={k} value={k}>{v.label}</option>
+              <option key={k} value={k}>
+                {v.label}
+              </option>
             ))}
           </select>
         </div>
 
+        {/* Records */}
         {loading ? (
           <div className="text-center py-12 text-muted text-sm">טוען...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted">
             <div className="text-4xl mb-2">💰</div>
-            <p className="text-sm">אין רשומות כספיות</p>
+            <p className="text-sm">
+              {records.length === 0
+                ? "אין רשומות בחודש זה"
+                : "אין תוצאות לחיפוש"}
+            </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {Object.entries(grouped).map(([month, records]) => (
-              <div key={month}>
-                <h2 className="text-sm font-medium text-muted mb-2">{month}</h2>
-                <div className="space-y-2">
-                  {records.map((r) => {
-                    const catConf = CATEGORY_CONFIG[r.category] || CATEGORY_CONFIG.other;
-                    const sym = CURRENCY_SYMBOL[r.currency] || r.currency;
-                    return (
-                      <div
-                        key={r.id}
-                        className="bg-card rounded-xl border border-border p-3 flex items-center gap-3"
-                      >
-                        <div className={`text-xs px-2 py-1 rounded-full border ${catConf.color}`}>
-                          {catConf.label}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{r.title}</p>
-                          <div className="flex flex-wrap gap-2 mt-1 text-xs text-secondary">
-                            {r.record_date && <span>{formatDate(r.record_date)}</span>}
-                            {r.is_recurring && <span>🔄 {r.recurrence_rule || "חוזר"}</span>}
-                            {r.member_name && <span>👤 {r.member_name}</span>}
-                          </div>
-                          {r.notes && <p className="text-xs text-muted mt-1 truncate">{r.notes}</p>}
-                        </div>
-                        <div className={`text-sm font-bold whitespace-nowrap ${
-                          r.category === "income" ? "text-green-500" : r.category === "expense" ? "text-red-500" : "text-primary"
-                        }`}>
-                          {r.category === "income" ? "+" : r.category === "expense" ? "-" : ""}
-                          {sym}{parseFloat(r.amount).toLocaleString()}
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() =>
-                              setModal({
-                                mode: "edit",
-                                initial: {
-                                  id: r.id,
-                                  title: r.title,
-                                  category: r.category,
-                                  amount: r.amount,
-                                  currency: r.currency,
-                                  record_date: r.record_date,
-                                  is_recurring: r.is_recurring,
-                                  recurrence_rule: r.recurrence_rule,
-                                  related_member_name: r.member_name,
-                                  notes: r.notes,
-                                  attachments: r.attachments,
-                                },
-                              })
-                            }
-                            className="text-xs text-muted hover:text-primary p-1 rounded-lg hover:bg-hover transition-colors"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDelete(r.id, r.title)}
-                            className="text-xs text-muted hover:text-red-500 p-1 rounded-lg hover:bg-hover transition-colors"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+          <div className="space-y-2">
+            {filtered.map((r) => (
+              <RecordCard
+                key={r.id}
+                r={r}
+                onEdit={() => openEdit(r)}
+                onDuplicate={() => openDuplicate(r)}
+                onDelete={() => handleDelete(r.id, r.title)}
+              />
             ))}
           </div>
         )}
