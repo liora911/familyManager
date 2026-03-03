@@ -18,7 +18,15 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   actions?: { tool: string; input: unknown; result: unknown }[];
+  imageCount?: number;
   timestamp: Date;
+}
+
+interface PendingImage {
+  data: string;
+  media_type: string;
+  name: string;
+  preview: string; // data URL for thumbnail
 }
 
 // ── Persistence ──────────────────────────────────────────────────────
@@ -40,6 +48,25 @@ function loadMessages(): Message[] {
 function saveMessages(msgs: Message[]) {
   const toSave = msgs.slice(-50);
   localStorage.setItem("home-manager-messages", JSON.stringify(toSave));
+}
+
+// ── Image helpers ───────────────────────────────────────────────────
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+
+function readFileAsBase64(file: File): Promise<{ data: string; preview: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip the data:...;base64, prefix for the API
+      const base64 = result.split(",")[1];
+      resolve({ data: base64, preview: result });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ── Suggestion chips ─────────────────────────────────────────────────
@@ -66,7 +93,9 @@ const ChatPanel = forwardRef<
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageCountRef = useRef(0);
   const { triggerRefresh } = useDashboardRefresh();
@@ -111,20 +140,58 @@ const ChatPanel = forwardRef<
     requestAnimationFrame(adjustHeight);
   };
 
+  // ── Image handling ────────────────────────────────────────────────
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) continue;
+      if (file.size > MAX_IMAGE_SIZE) continue;
+      if (pendingImages.length >= 4) break;
+
+      try {
+        const { data, preview } = await readFileAsBase64(file);
+        setPendingImages((prev) => [
+          ...prev.slice(0, 3), // max 4 total
+          { data, media_type: file.type, name: file.name, preview },
+        ]);
+      } catch {
+        // skip failed reads
+      }
+    }
+
+    // Reset file input so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // ── Submit ────────────────────────────────────────────────────────
 
   const handleSubmit = async (directMessage?: string) => {
     const text = directMessage || input.trim();
-    if (!text || loading) return;
+    const hasImages = pendingImages.length > 0;
+    if ((!text && !hasImages) || loading) return;
 
     const userMsg: Message = {
       role: "user",
-      content: text,
+      content: text || (hasImages ? "תמונה" : ""),
+      imageCount: hasImages ? pendingImages.length : undefined,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
+
+    // Capture images before clearing
+    const imagesToSend = hasImages
+      ? pendingImages.map((img) => ({ data: img.data, media_type: img.media_type }))
+      : undefined;
+    setPendingImages([]);
     setLoading(true);
 
     try {
@@ -147,7 +214,12 @@ const ChatPanel = forwardRef<
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history, user }),
+        body: JSON.stringify({
+          message: text,
+          history,
+          user,
+          images: imagesToSend,
+        }),
       });
       const data = await res.json();
 
@@ -199,6 +271,8 @@ const ChatPanel = forwardRef<
   const shouldAnimate = (index: number): boolean => {
     return index >= messageCountRef.current;
   };
+
+  const canSend = input.trim() || pendingImages.length > 0;
 
   // ── Render ────────────────────────────────────────────────────────
 
@@ -253,6 +327,16 @@ const ChatPanel = forwardRef<
                     : undefined
                 }
               >
+                {/* Image indicator for user messages */}
+                {msg.role === "user" && msg.imageCount && msg.imageCount > 0 && (
+                  <div className="flex items-center gap-1 mb-1.5 text-white/70 text-xs">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a.75.75 0 00-1.06 0l-1.91 1.909-4.97-4.969a.75.75 0 00-1.06 0L2.5 11.06zm12.22-4.81a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>{msg.imageCount} {msg.imageCount === 1 ? "תמונה" : "תמונות"}</span>
+                  </div>
+                )}
+
                 {/* Content */}
                 {msg.role === "assistant" ? (
                   <div className="chat-prose">
@@ -261,9 +345,11 @@ const ChatPanel = forwardRef<
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {msg.content}
-                  </p>
+                  msg.content && (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {msg.content}
+                    </p>
+                  )
                 )}
 
                 {/* Tool actions badge */}
@@ -335,12 +421,60 @@ const ChatPanel = forwardRef<
       {/* Input area */}
       <footer className="flex-shrink-0 p-3 sm:p-4">
         <div className="max-w-2xl mx-auto">
+          {/* Image preview strip */}
+          {pendingImages.length > 0 && (
+            <div className="flex gap-2 mb-2 px-1">
+              {pendingImages.map((img, i) => (
+                <div key={i} className="relative group/img">
+                  <img
+                    src={img.preview}
+                    alt={img.name}
+                    className="w-12 h-12 rounded-lg object-cover border border-border"
+                  />
+                  <button
+                    onClick={() => removeImage(i)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white
+                               flex items-center justify-center text-xs opacity-0 group-hover/img:opacity-100
+                               transition-opacity"
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div
             className="flex items-end gap-2 bg-input border border-border rounded-2xl
                         px-3 py-2 transition-all duration-200
                         focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]
                         shadow-sm"
           >
+            {/* Image upload button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || pendingImages.length >= 4}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center
+                         rounded-full text-muted hover:text-primary
+                         disabled:opacity-30 disabled:cursor-not-allowed
+                         transition-colors"
+              title="צרף תמונה"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a.75.75 0 00-1.06 0l-1.91 1.909-4.97-4.969a.75.75 0 00-1.06 0L2.5 11.06zm12.22-4.81a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
             <textarea
               ref={inputRef}
               value={input}
@@ -355,7 +489,7 @@ const ChatPanel = forwardRef<
             />
             <button
               onClick={() => handleSubmit()}
-              disabled={!input.trim() || loading}
+              disabled={!canSend || loading}
               className="flex-shrink-0 w-8 h-8 flex items-center justify-center
                          rounded-full bg-blue-500 text-white
                          disabled:opacity-30 disabled:cursor-not-allowed

@@ -8,9 +8,9 @@ const anthropic = new Anthropic();
 
 export async function POST(req: Request) {
   try {
-    const { message, history, user } = await req.json();
+    const { message, history, user, images } = await req.json();
 
-    if (!message || typeof message !== "string") {
+    if ((!message || typeof message !== "string") && (!images || !images.length)) {
       return Response.json({ error: "Missing message" }, { status: 400 });
     }
 
@@ -45,8 +45,26 @@ export async function POST(req: Request) {
       }
     }
 
-    // Add current message
-    messages.push({ role: "user", content: message });
+    // Add current message (with optional images for vision)
+    if (Array.isArray(images) && images.length > 0) {
+      const contentBlocks: Anthropic.ContentBlockParam[] = [];
+      for (const img of images.slice(0, 4)) {
+        if (img.data && img.media_type?.startsWith("image/")) {
+          contentBlocks.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: img.media_type as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+              data: img.data,
+            },
+          });
+        }
+      }
+      contentBlocks.push({ type: "text", text: message || "מה יש בתמונה?" });
+      messages.push({ role: "user", content: contentBlocks });
+    } else {
+      messages.push({ role: "user", content: message });
+    }
 
     let response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
