@@ -195,9 +195,10 @@ export default function UnifiedHeader({
           </button>
           <button
             onClick={handleLogout}
-            className="hidden sm:block text-xs text-muted hover:text-primary transition-colors"
+            className="hidden sm:flex items-center justify-center text-muted hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-hover"
+            title="יציאה"
           >
-            יציאה
+            <LogoutIcon />
           </button>
 
           {/* ── Mobile: primary actions + overflow menu ── */}
