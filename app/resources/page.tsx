@@ -295,7 +295,7 @@ export default function ResourcesPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 sm:p-6">
+      <main className="max-w-5xl mx-auto p-4 sm:p-6">
         {loading ? (
           <div className="text-center py-16 text-muted text-sm">טוען...</div>
         ) : (
