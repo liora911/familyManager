@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     if (memberId) {
       [events, tasks] = await Promise.all([
         sql(
-          `SELECT e.*, fm.name as member_name, c.name as contact_name
+          `SELECT e.*, fm.name as member_name, c.name as contact_name, c.phone as contact_phone
            FROM events e
            LEFT JOIN family_members fm ON e.related_member_id = fm.id
            LEFT JOIN contacts c ON e.contact_id = c.id
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
       );
     } else {
       [events, tasks, medications] = await Promise.all([
-        sql`SELECT e.*, fm.name as member_name, c.name as contact_name
+        sql`SELECT e.*, fm.name as member_name, c.name as contact_name, c.phone as contact_phone
             FROM events e
             LEFT JOIN family_members fm ON e.related_member_id = fm.id
             LEFT JOIN contacts c ON e.contact_id = c.id
