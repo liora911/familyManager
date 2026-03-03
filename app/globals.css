@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* ── Prevent browser-level scrollbar — all scrolling is internal ── */
+html, body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 /* ── Theme color tokens ─────────────────────────────────── */
 
 :root {
