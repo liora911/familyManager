@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import EventsCalendar from "@/app/components/EventsCalendar";
-import { Card, ActionButtons, Tag, StatusBadge, Empty } from "@/app/components/DashboardCards";
+import { Card, ActionButtons, Tag, StatusBadge, Empty, shareWhatsApp } from "@/app/components/DashboardCards";
 import ClockFooter from "@/app/components/ClockFooter";
 import FormModal, { tabs, crudRequest, type TabKey } from "@/app/components/FormModal";
 import { useDashboardRefresh } from "@/app/contexts/DashboardRefreshContext";
@@ -112,6 +112,57 @@ function formatDate(dateStr: string) {
 function formatShortDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
+}
+
+// ── WhatsApp share text formatters ──────────────────────────────────
+
+function shareEvent(e: Event) {
+  const lines = [`📅 ${e.title}`, `🗓 ${formatDate(e.event_date)}`];
+  if (e.location) lines.push(`📍 ${e.location}`);
+  if (e.member_name) lines.push(`👤 ${e.member_name}`);
+  if (e.contact_name) lines.push(`📞 ${e.contact_name}`);
+  if (e.description) lines.push(`\n${e.description}`);
+  shareWhatsApp(lines.join("\n"));
+}
+
+function shareTask(t: Task) {
+  const lines = [`✅ ${t.title}`];
+  if (t.description) lines.push(t.description);
+  if (t.priority) lines.push(`⚡ ${priorityLabels[t.priority] || t.priority}`);
+  if (t.due_date) lines.push(`📅 ${formatShortDate(t.due_date)}`);
+  if (t.assigned_name) lines.push(`👤 ${t.assigned_name}`);
+  shareWhatsApp(lines.join("\n"));
+}
+
+function shareReminder(r: Reminder) {
+  const lines = [`🔔 ${r.message}`, `⏰ ${formatDate(r.remind_at)}`];
+  if (r.event_title) lines.push(`📅 ${r.event_title}`);
+  if (r.is_recurring) lines.push(`🔄 ${r.recurrence_rule || "חוזר"}`);
+  shareWhatsApp(lines.join("\n"));
+}
+
+function shareMedication(m: Medication) {
+  const lines = [`💊 ${m.name}`];
+  if (m.dosage) lines.push(`מינון: ${m.dosage}`);
+  if (m.frequency) lines.push(`🔄 ${m.frequency}`);
+  if (m.member_name) lines.push(`👤 ${m.member_name}`);
+  if (m.notes) lines.push(`\n${m.notes}`);
+  shareWhatsApp(lines.join("\n"));
+}
+
+function shareShopping(item: ShoppingItem) {
+  const lines = [`🛒 ${item.item_name}`];
+  if (item.quantity) lines.push(`כמות: ${item.quantity}`);
+  if (item.store) lines.push(`🏪 ${item.store}`);
+  shareWhatsApp(lines.join("\n"));
+}
+
+function shareKey(k: KeyItem) {
+  const lines = [`🔑 ${k.name}`, k.value];
+  if (k.category) lines.push(`קטגוריה: ${k.category}`);
+  if (k.location) lines.push(`📍 ${k.location}`);
+  if (k.notes) lines.push(`\n${k.notes}`);
+  shareWhatsApp(lines.join("\n"));
 }
 
 // ── Expired section ──────────────────────────────────────────────────
@@ -370,6 +421,7 @@ export default function DashboardPanel({
                   const renderEvent = (e: Event) => (
                     <Card
                       key={e.id}
+                      onShare={() => shareEvent(e)}
                       onEdit={() =>
                         setModal({
                           entity: "events",
@@ -457,6 +509,7 @@ export default function DashboardPanel({
                                     {item.store && <span>🏪 {item.store}</span>}
                                   </div>
                                   <ActionButtons
+                                    onShare={() => shareShopping(item)}
                                     onEdit={() =>
                                       setModal({
                                         entity: "shopping",
@@ -502,6 +555,7 @@ export default function DashboardPanel({
                   const renderTask = (t: Task) => (
                     <Card
                       key={t.id}
+                      onShare={() => shareTask(t)}
                       onEdit={() =>
                         setModal({
                           entity: "tasks",
@@ -565,6 +619,7 @@ export default function DashboardPanel({
                   const renderReminder = (r: Reminder) => (
                     <Card
                       key={r.id}
+                      onShare={() => shareReminder(r)}
                       onEdit={() =>
                         setModal({
                           entity: "reminders",
@@ -607,6 +662,7 @@ export default function DashboardPanel({
                   const renderMed = (m: Medication) => (
                     <Card
                       key={m.id}
+                      onShare={() => shareMedication(m)}
                       onEdit={() =>
                         setModal({
                           entity: "medications",
@@ -650,6 +706,7 @@ export default function DashboardPanel({
                   data.keys.map((k) => (
                     <Card
                       key={k.id}
+                      onShare={() => shareKey(k)}
                       onEdit={() =>
                         setModal({
                           entity: "keys",
