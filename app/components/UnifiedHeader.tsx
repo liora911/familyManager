@@ -84,6 +84,7 @@ function LogoutIcon({ className }: { className?: string }) {
 export default function UnifiedHeader({
   user,
   isPanelOpen,
+  isInventoryOpen,
   hasMessages,
   onTogglePanel,
   onClearChat,
@@ -91,6 +92,7 @@ export default function UnifiedHeader({
 }: {
   user: string;
   isPanelOpen: boolean;
+  isInventoryOpen?: boolean;
   hasMessages: boolean;
   onTogglePanel: () => void;
   onClearChat: () => void;
@@ -169,7 +171,11 @@ export default function UnifiedHeader({
           {onOpenInventory && (
             <button
               onClick={onOpenInventory}
-              className="hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors text-muted hover:text-primary"
+              className={`hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors ${
+                isInventoryOpen
+                  ? "text-link bg-badge-blue-bg"
+                  : "text-muted hover:text-primary"
+              }`}
             >
               <InventoryIcon />
               מלאי הבית
@@ -233,9 +239,11 @@ export default function UnifiedHeader({
                 {onOpenInventory && (
                   <button
                     onClick={() => { setMenuOpen(false); onOpenInventory(); }}
-                    className="w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm text-primary hover:bg-hover transition-colors"
+                    className={`w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm transition-colors ${
+                      isInventoryOpen ? "text-link bg-badge-blue-bg" : "text-primary hover:bg-hover"
+                    }`}
                   >
-                    <InventoryIcon className="w-4 h-4 text-muted flex-shrink-0" />
+                    <InventoryIcon className={`w-4 h-4 flex-shrink-0 ${isInventoryOpen ? "text-link" : "text-muted"}`} />
                     מלאי הבית
                   </button>
                 )}

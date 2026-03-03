@@ -94,6 +94,7 @@ function Home() {
       <UnifiedHeader
         user={user}
         isPanelOpen={isDesktop ? isPanelOpen : isDrawerOpen}
+        isInventoryOpen={showInventory}
         hasMessages={hasMessages}
         onTogglePanel={handleTogglePanel}
         onClearChat={handleClearChat}
