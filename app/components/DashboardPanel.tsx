@@ -230,13 +230,23 @@ export default function DashboardPanel({
     <div className={`flex flex-col h-full ${className || ""}`}>
       {/* Panel toolbar */}
       {onToggleExpand && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card flex-shrink-0">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-card flex-shrink-0">
+          <span className="text-xs text-muted">דשבורד ניהול</span>
           <button
             onClick={onToggleExpand}
-            className="text-muted hover:text-primary text-xs px-2.5 py-1 rounded-lg
-                       bg-tag border border-border transition-colors"
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl
+                       transition-all duration-200
+                       bg-blue-500/10 text-blue-500 border border-blue-500/30
+                       hover:bg-blue-500/20 hover:border-blue-500/50
+                       active:scale-95"
           >
-            {expanded ? "↙ צמצם" : "↗ הרחב"}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}>
+              <path d="M15 3h6v6" />
+              <path d="M9 21H3v-6" />
+              <path d="M21 3l-7 7" />
+              <path d="M3 21l7-7" />
+            </svg>
+            {expanded ? "צמצם" : "הרחב"}
           </button>
         </div>
       )}
@@ -305,26 +315,34 @@ export default function DashboardPanel({
             {/* ── Events ── */}
             {activeTab === "events" && (
               <div className="space-y-2">
-                <div className="flex items-center gap-1 bg-tag rounded-lg p-1 w-fit">
+                <div className="relative flex items-center bg-tag rounded-xl p-1 w-fit">
+                  {/* Sliding highlight */}
+                  <div
+                    className="absolute top-1 bottom-1 rounded-lg bg-card shadow-sm transition-all duration-250 ease-in-out"
+                    style={{
+                      width: "calc(50% - 2px)",
+                      right: eventsView === "list" ? "2px" : "calc(50%)",
+                    }}
+                  />
                   <button
                     onClick={() => setEventsView("list")}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                    className={`relative z-10 text-xs px-3 py-1.5 rounded-lg transition-colors duration-200 ${
                       eventsView === "list"
-                        ? "bg-card text-primary shadow-sm"
-                        : "text-secondary hover:text-primary"
+                        ? "text-primary font-medium"
+                        : "text-muted hover:text-secondary"
                     }`}
                   >
-                    📋 רשימה
+                    רשימה
                   </button>
                   <button
                     onClick={() => setEventsView("calendar")}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                    className={`relative z-10 text-xs px-3 py-1.5 rounded-lg transition-colors duration-200 ${
                       eventsView === "calendar"
-                        ? "bg-card text-primary shadow-sm"
-                        : "text-secondary hover:text-primary"
+                        ? "text-primary font-medium"
+                        : "text-muted hover:text-secondary"
                     }`}
                   >
-                    📅 לוח חודשי
+                    לוח חודשי
                   </button>
                 </div>
 
