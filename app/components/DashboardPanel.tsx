@@ -153,10 +153,12 @@ export default function DashboardPanel({
   className,
   expanded,
   onToggleExpand,
+  requestedTab,
 }: {
   className?: string;
   expanded?: boolean;
   onToggleExpand?: () => void;
+  requestedTab?: TabKey | null;
 }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,6 +170,11 @@ export default function DashboardPanel({
     mode: "create" | "edit";
     initial?: Record<string, unknown>;
   } | null>(null);
+
+  // Sync external tab request
+  useEffect(() => {
+    if (requestedTab) setActiveTab(requestedTab);
+  }, [requestedTab]);
 
   const { subscribeRefresh } = useDashboardRefresh();
 
