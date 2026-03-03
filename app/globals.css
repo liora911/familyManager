@@ -6,6 +6,15 @@ html, body {
   overflow: hidden;
 }
 
+/* ── Hide all scrollbars while keeping scroll functional ── */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── All interactive elements get pointer cursor ── */
 button, a, [role="button"], label, select, summary {
   cursor: pointer;
