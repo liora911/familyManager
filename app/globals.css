@@ -6,6 +6,11 @@ html, body {
   overflow: hidden;
 }
 
+/* ── All interactive elements get pointer cursor ── */
+button, a, [role="button"], label, select, summary {
+  cursor: pointer;
+}
+
 /* ── Theme color tokens ─────────────────────────────────── */
 
 :root {
