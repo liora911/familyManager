@@ -173,13 +173,9 @@ function ExpiredSection({
 
 export default function DashboardPanel({
   className,
-  expanded,
-  onToggleExpand,
   requestedTab,
 }: {
   className?: string;
-  expanded?: boolean;
-  onToggleExpand?: () => void;
   requestedTab?: TabKey | null;
 }) {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -257,29 +253,6 @@ export default function DashboardPanel({
 
   return (
     <div className={`flex flex-col h-full ${className || ""}`}>
-      {/* Panel toolbar */}
-      {onToggleExpand && (
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-card flex-shrink-0">
-          <span className="text-xs text-muted">דשבורד ניהול</span>
-          <button
-            onClick={onToggleExpand}
-            className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl
-                       transition-all duration-200
-                       bg-blue-500/10 text-blue-500 border border-blue-500/30
-                       hover:bg-blue-500/20 hover:border-blue-500/50
-                       active:scale-95"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}>
-              <path d="M15 3h6v6" />
-              <path d="M9 21H3v-6" />
-              <path d="M21 3l-7 7" />
-              <path d="M3 21l7-7" />
-            </svg>
-            {expanded ? "צמצם" : "הרחב"}
-          </button>
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="bg-card border-b border-border px-2 overflow-x-auto flex-shrink-0">
         <div className="flex gap-0.5">

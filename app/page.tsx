@@ -112,50 +112,72 @@ function Home() {
             <ChatPanel ref={chatRef} className="flex-1 min-w-0" user={user} />
 
             {/* Dashboard panel — desktop only, collapsible with icon sidebar */}
-            <div
-              className="hidden lg:block overflow-hidden border-r border-border flex-shrink-0
-                         transition-[width] duration-300 ease-in-out"
-              style={{
-                width: isPanelOpen
-                  ? isPanelExpanded
-                    ? PANEL_WIDTH_EXPANDED
-                    : PANEL_WIDTH
-                  : PANEL_WIDTH_COLLAPSED,
-              }}
-            >
-              {isPanelOpen ? (
-                <div
-                  className="h-full"
-                  style={{
-                    width: isPanelExpanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH,
-                  }}
+            <div className="hidden lg:flex flex-shrink-0 h-full">
+              {/* Expand/collapse tongue tab */}
+              {isPanelOpen && (
+                <button
+                  onClick={() => setIsPanelExpanded((p) => !p)}
+                  className="flex-shrink-0 self-start mt-2 w-5 h-9 bg-card
+                             border border-border border-l-0 rounded-r-lg
+                             flex items-center justify-center
+                             text-muted hover:text-primary hover:bg-hover
+                             transition-colors z-10"
+                  style={{ marginLeft: "-1px" }}
+                  title={isPanelExpanded ? "צמצם" : "הרחב"}
                 >
-                  <DashboardPanel
-                    expanded={isPanelExpanded}
-                    onToggleExpand={() => setIsPanelExpanded((p) => !p)}
-                    requestedTab={requestedTab}
-                  />
-                </div>
-              ) : (
-                /* Collapsed icon sidebar */
-                <div
-                  className="h-full flex flex-col items-center py-3 gap-1 bg-card"
-                  style={{ width: PANEL_WIDTH_COLLAPSED }}
-                >
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => handleSidebarIconClick(tab.key)}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl
-                                 text-lg text-muted hover:text-primary hover:bg-hover
-                                 transition-colors"
-                      title={tab.label}
-                    >
-                      {tab.icon}
-                    </button>
-                  ))}
-                </div>
+                  <svg
+                    width="10" height="10" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    className={`transition-transform duration-300 ${isPanelExpanded ? "" : "rotate-180"}`}
+                  >
+                    <path d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
               )}
+
+              {/* Panel body */}
+              <div
+                className="overflow-hidden border-r border-border
+                           transition-[width] duration-300 ease-in-out"
+                style={{
+                  width: isPanelOpen
+                    ? isPanelExpanded
+                      ? PANEL_WIDTH_EXPANDED
+                      : PANEL_WIDTH
+                    : PANEL_WIDTH_COLLAPSED,
+                }}
+              >
+                {isPanelOpen ? (
+                  <div
+                    className="h-full"
+                    style={{
+                      width: isPanelExpanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH,
+                    }}
+                  >
+                    <DashboardPanel requestedTab={requestedTab} />
+                  </div>
+                ) : (
+                  /* Collapsed icon sidebar */
+                  <div
+                    className="h-full flex flex-col items-center py-3 gap-1 bg-card"
+                    style={{ width: PANEL_WIDTH_COLLAPSED }}
+                  >
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => handleSidebarIconClick(tab.key)}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl
+                                   text-lg text-muted hover:text-primary hover:bg-hover
+                                   transition-colors"
+                        title={tab.label}
+                      >
+                        {tab.icon}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
