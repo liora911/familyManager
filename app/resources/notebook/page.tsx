@@ -23,6 +23,19 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
   other: { label: "אחר", icon: "📌" },
 };
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    .replace(/#{1,6}\s+/g, "")
+    .replace(/[`~]{1,3}/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/^\d+\.\s+/gm, "");
+}
+
 function timeAgo(dateStr: string) {
   const d = new Date(dateStr);
   const now = new Date();
@@ -278,7 +291,7 @@ export default function NotebookPage() {
                         </span>
                       </div>
                       <p className="text-xs text-secondary mt-1.5 line-clamp-2 whitespace-pre-wrap">
-                        {entry.content}
+                        {stripMarkdown(entry.content)}
                       </p>
                       <p className="text-[10px] text-muted mt-2">
                         {timeAgo(entry.updated_at || entry.created_at)}
