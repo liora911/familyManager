@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
-/* ── Prevent browser-level scrollbar — all scrolling is internal ── */
+/* ── Chat page locks viewport; resource pages scroll naturally ── */
 html, body {
   height: 100dvh;
+}
+body:has(.chat-viewport) {
   overflow: hidden;
 }
 

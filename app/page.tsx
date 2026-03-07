@@ -90,7 +90,7 @@ function Home() {
   }, []);
 
   return (
-    <div dir="rtl" className="flex flex-col h-dvh bg-surface text-primary">
+    <div dir="rtl" className="chat-viewport flex flex-col h-dvh bg-surface text-primary">
       <UnifiedHeader
         user={user}
         isPanelOpen={isDesktop ? isPanelOpen : isDrawerOpen}
