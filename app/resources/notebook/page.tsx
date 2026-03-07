@@ -48,7 +48,11 @@ function timeAgo(dateStr: string) {
   if (hours < 24) return `לפני ${hours} שעות`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `לפני ${days} ימים`;
-  return d.toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString("he-IL", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export default function NotebookPage() {
@@ -74,7 +78,9 @@ export default function NotebookPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const openNew = () => {
     setEditing({
@@ -159,7 +165,7 @@ export default function NotebookPage() {
     if (search) {
       const s = search.toLowerCase();
       return (
-        (e.title?.toLowerCase().includes(s)) ||
+        e.title?.toLowerCase().includes(s) ||
         e.content.toLowerCase().includes(s)
       );
     }
@@ -168,9 +174,13 @@ export default function NotebookPage() {
 
   // ── Full-screen view (rendered markdown) ──────────────────────────
   if (viewing) {
-    const catConf = CATEGORY_CONFIG[viewing.category] || CATEGORY_CONFIG.general;
+    const catConf =
+      CATEGORY_CONFIG[viewing.category] || CATEGORY_CONFIG.general;
     return (
-      <div dir="rtl" className="min-h-dvh bg-surface text-primary flex flex-col">
+      <div
+        dir="rtl"
+        className="min-h-dvh bg-surface text-primary flex flex-col"
+      >
         <header className="border-b border-border bg-card px-5 sm:px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <button
@@ -185,7 +195,11 @@ export default function NotebookPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => handleDelete(viewing.id, viewing.title || "רשומה").then(() => setViewing(null))}
+              onClick={() =>
+                handleDelete(viewing.id, viewing.title || "רשומה").then(() =>
+                  setViewing(null),
+                )
+              }
               className="text-muted hover:text-red-500 transition-colors text-lg px-3 py-2"
             >
               🗑️
@@ -202,7 +216,8 @@ export default function NotebookPage() {
           {viewing.title && (
             <h1 className="text-2xl font-bold mb-5">{viewing.title}</h1>
           )}
-          <div className="prose prose-base prose-invert max-w-none
+          <div
+            className="prose prose-base prose-invert max-w-none
             prose-headings:text-primary prose-headings:font-bold
             prose-p:text-secondary prose-p:leading-relaxed
             prose-strong:text-primary prose-em:text-secondary
@@ -211,7 +226,8 @@ export default function NotebookPage() {
             prose-a:text-link prose-a:no-underline hover:prose-a:underline
             prose-blockquote:border-border prose-blockquote:text-muted
             prose-code:text-primary prose-code:bg-tag prose-code:px-1 prose-code:rounded
-            prose-pre:bg-card prose-pre:border prose-pre:border-border">
+            prose-pre:bg-card prose-pre:border prose-pre:border-border"
+          >
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {viewing.content}
             </ReactMarkdown>
@@ -227,7 +243,10 @@ export default function NotebookPage() {
   // ── Full-screen editor ────────────────────────────────────────────
   if (editing) {
     return (
-      <div dir="rtl" className="min-h-dvh bg-surface text-primary flex flex-col">
+      <div
+        dir="rtl"
+        className="min-h-dvh bg-surface text-primary flex flex-col"
+      >
         <header className="border-b border-border bg-card px-5 sm:px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <button
@@ -297,7 +316,9 @@ export default function NotebookPage() {
             </button>
             <div>
               <h1 className="text-2xl font-semibold">📓 מחברת</h1>
-              <p className="text-base text-secondary mt-0.5">רעיונות, מחשבות, רשימות</p>
+              <p className="text-base text-secondary mt-0.5">
+                רעיונות, מחשבות, רשימות
+              </p>
             </div>
           </div>
           <button
@@ -327,7 +348,9 @@ export default function NotebookPage() {
           >
             <option value="">הכל</option>
             {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
-              <option key={k} value={k}>{v.icon} {v.label}</option>
+              <option key={k} value={k}>
+                {v.icon} {v.label}
+              </option>
             ))}
           </select>
         </div>
@@ -338,14 +361,18 @@ export default function NotebookPage() {
           <div className="text-center py-16 text-muted">
             <div className="text-5xl mb-3">📓</div>
             <p className="text-lg">המחברת ריקה</p>
-            <button onClick={openNew} className="mt-4 text-link hover:underline text-base">
+            <button
+              onClick={openNew}
+              className="mt-4 text-link hover:underline text-base"
+            >
               כתוב רשומה ראשונה
             </button>
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map((entry) => {
-              const catConf = CATEGORY_CONFIG[entry.category] || CATEGORY_CONFIG.general;
+              const catConf =
+                CATEGORY_CONFIG[entry.category] || CATEGORY_CONFIG.general;
               return (
                 <div
                   key={entry.id}
@@ -364,11 +391,12 @@ export default function NotebookPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          {entry.is_pinned && <span className="text-amber-500 text-lg">📌</span>}
+                          {entry.is_pinned && (
+                            <span className="text-amber-500 text-lg">📌</span>
+                          )}
                           <p className="font-semibold text-lg">
                             {entry.title || "ללא כותרת"}
                           </p>
-                          <span className="text-sm text-muted">{catConf.label}</span>
                         </div>
                         <p className="text-base text-secondary mt-2 line-clamp-2 whitespace-pre-wrap leading-relaxed">
                           {stripMarkdown(entry.content)}
@@ -377,18 +405,25 @@ export default function NotebookPage() {
                           {timeAgo(entry.updated_at || entry.created_at)}
                         </p>
                       </div>
-                      <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex gap-1 flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           onClick={() => handleTogglePin(entry)}
                           className={`text-lg p-2 rounded-lg hover:bg-hover transition-colors ${
-                            entry.is_pinned ? "text-amber-500" : "text-muted hover:text-amber-500"
+                            entry.is_pinned
+                              ? "text-amber-500"
+                              : "text-muted hover:text-amber-500"
                           }`}
                           title={entry.is_pinned ? "בטל נעיצה" : "נעץ"}
                         >
                           📌
                         </button>
                         <button
-                          onClick={() => handleDelete(entry.id, entry.title || "רשומה")}
+                          onClick={() =>
+                            handleDelete(entry.id, entry.title || "רשומה")
+                          }
                           className="text-lg text-muted hover:text-red-500 p-2 rounded-lg hover:bg-hover transition-colors"
                         >
                           🗑️
