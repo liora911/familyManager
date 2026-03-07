@@ -363,16 +363,16 @@ export default function NotebookPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          {entry.is_pinned && <span className="text-amber-500 text-xs">📌</span>}
-                          <p className="font-medium text-sm">
+                          {entry.is_pinned && <span className="text-amber-500">📌</span>}
+                          <p className="font-semibold text-base">
                             {entry.title || "ללא כותרת"}
                           </p>
-                          <span className="text-[10px] text-muted">{catConf.label}</span>
+                          <span className="text-xs text-muted">{catConf.label}</span>
                         </div>
-                        <p className="text-xs text-secondary mt-1.5 line-clamp-2 whitespace-pre-wrap">
+                        <p className="text-sm text-secondary mt-2 line-clamp-2 whitespace-pre-wrap">
                           {stripMarkdown(entry.content)}
                         </p>
-                        <p className="text-[10px] text-muted mt-2">
+                        <p className="text-xs text-muted mt-2">
                           {timeAgo(entry.updated_at || entry.created_at)}
                         </p>
                       </div>
