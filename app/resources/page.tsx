@@ -12,7 +12,6 @@ interface InsurancePolicy {
   category: string;
   provider?: string;
   end_date?: string;
-  monthly_cost?: string;
 }
 
 interface FinanceRecord {
@@ -115,9 +114,9 @@ function Stat({ label, value, warn }: { label: string; value: string | number; w
 
 function InsuranceRow({ data }: { data: InsurancePolicy[] }) {
   const total = data.length;
+  const active = data.filter((p) => !isPast(p.end_date)).length;
   const expired = data.filter((p) => isPast(p.end_date)).length;
   const expiring = data.filter((p) => isExpiringSoon(p.end_date)).length;
-  const monthlyCost = data.reduce((sum, p) => sum + (parseFloat(p.monthly_cost || "0") || 0), 0);
 
   return (
     <Link href="/resources/insurance" className="block group">
@@ -140,10 +139,9 @@ function InsuranceRow({ data }: { data: InsurancePolicy[] }) {
             {total > 0 && (
               <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
                 <Stat label="פוליסות" value={total} />
-                {monthlyCost > 0 && <Stat label="עלות חודשית" value={`₪${Math.round(monthlyCost).toLocaleString()}`} />}
-                {monthlyCost > 0 && <Stat label="עלות שנתית" value={`₪${Math.round(monthlyCost * 12).toLocaleString()}`} />}
+                {active > 0 && <Stat label="פעילות" value={active} />}
                 {expiring > 0 && <Stat label="עומדות לפוג" value={expiring} warn />}
-                {expired > 0 && <Stat label="פגו" value={expired} warn />}
+                {expired > 0 && <Stat label="פגו תוקף" value={expired} warn />}
               </div>
             )}
           </div>
