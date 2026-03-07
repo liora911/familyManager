@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { del } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 
 const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications", "keys", "inventory", "insurance", "finance", "cv", "notebook"] as const;
@@ -58,9 +59,9 @@ export async function POST(
 
       case "shopping": {
         const [row] = await sql`
-          INSERT INTO shopping_items (item_name, quantity, category, store, list_name)
+          INSERT INTO shopping_items (item_name, quantity, category, store, list_name, image_url)
           VALUES (${body.item_name}, ${body.quantity || null}, ${body.category || "grocery"},
-                  ${body.store || null}, ${body.list_name || "default"})
+                  ${body.store || null}, ${body.list_name || "default"}, ${body.image_url || null})
           RETURNING *
         `;
         return json({ success: true, item: row });
@@ -218,13 +219,21 @@ export async function PUT(
       }
 
       case "shopping": {
+        // If replacing image, delete old blob
+        if (fields.image_url !== undefined) {
+          const [existing] = await sql`SELECT image_url FROM shopping_items WHERE id = ${id}`;
+          if (existing?.image_url && existing.image_url !== fields.image_url) {
+            try { await del(existing.image_url); } catch { /* ignore */ }
+          }
+        }
         const [row] = await sql`
           UPDATE shopping_items SET
             item_name = COALESCE(${fields.item_name || null}, item_name),
             quantity = COALESCE(${fields.quantity ?? null}, quantity),
             category = COALESCE(${fields.category || null}, category),
             store = COALESCE(${fields.store ?? null}, store),
-            is_purchased = COALESCE(${fields.is_purchased ?? null}, is_purchased)
+            is_purchased = COALESCE(${fields.is_purchased ?? null}, is_purchased),
+            image_url = COALESCE(${fields.image_url !== undefined ? (fields.image_url || null) : null}, image_url)
           WHERE id = ${id}
           RETURNING *
         `;
@@ -398,6 +407,11 @@ export async function DELETE(
 
     // Special: clear all purchased shopping items
     if (entity === "shopping" && body.clear_purchased) {
+      // Clean up blobs for purchased items that have images
+      const withImages = await sql`SELECT image_url FROM shopping_items WHERE is_purchased = true AND image_url IS NOT NULL`;
+      for (const row of withImages) {
+        try { await del(row.image_url); } catch { /* ignore */ }
+      }
       await sql`DELETE FROM shopping_items WHERE is_purchased = true`;
       return json({ success: true });
     }
@@ -422,6 +436,14 @@ export async function DELETE(
     // Cascade: delete reminders linked to event
     if (entity === "events") {
       await sql`DELETE FROM reminders WHERE event_id = ${id}`;
+    }
+
+    // Clean up blob for shopping item image
+    if (entity === "shopping") {
+      const [existing] = await sql`SELECT image_url FROM shopping_items WHERE id = ${id}`;
+      if (existing?.image_url) {
+        try { await del(existing.image_url); } catch { /* ignore */ }
+      }
     }
 
     const rows = await sql(`DELETE FROM ${table[entity as Entity]} WHERE id = $1 RETURNING id`, [id]);

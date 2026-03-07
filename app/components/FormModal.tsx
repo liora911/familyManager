@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   INVENTORY_CATEGORIES,
   findCategoryBySubKey,
   type InventoryCategory,
 } from "@/app/components/InventoryCategories";
 import FileUpload, { type Attachment } from "@/app/components/FileUpload";
+import { clientUpload, isAllowedFile } from "@/lib/upload";
 
 // ── Shared constants ────────────────────────────────────────────────
 
@@ -418,6 +419,80 @@ function InventoryTreePicker({
   );
 }
 
+// ── Shopping Image Upload ────────────────────────────────────────────
+
+function ShoppingImageField({
+  imageUrl,
+  onChange,
+}: {
+  imageUrl: string;
+  onChange: (url: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const handleFile = async (file: File) => {
+    if (!isAllowedFile(file)) return;
+    setUploading(true);
+    setProgress(0);
+    const result = await clientUpload(file, setProgress);
+    setUploading(false);
+    setProgress(0);
+    if (result.success && result.url) {
+      onChange(result.url);
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-base font-medium text-secondary mb-1.5">
+        תמונה
+      </label>
+      {imageUrl ? (
+        <div className="relative inline-block">
+          <img
+            src={imageUrl}
+            alt="תמונת פריט"
+            className="w-24 h-24 object-cover rounded-xl border border-border"
+          />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-400"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => !uploading && fileRef.current?.click()}
+          disabled={uploading}
+          className="border-2 border-dashed border-border rounded-xl px-4 py-3 text-sm text-secondary hover:border-blue-500 hover:bg-hover transition-colors w-full"
+        >
+          {uploading ? (
+            <span>מעלה... {progress > 0 && `${progress}%`}</span>
+          ) : (
+            <span>📷 הוסף תמונה</span>
+          )}
+        </button>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          if (fileRef.current) fileRef.current.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
 // ── FormModal Component ─────────────────────────────────────────────
 
 export default function FormModal({
@@ -645,6 +720,14 @@ export default function FormModal({
               )}
             </div>
           ))}
+
+          {/* Shopping image upload */}
+          {entity === "shopping" && (
+            <ShoppingImageField
+              imageUrl={(form.image_url as string) || ""}
+              onChange={(url) => setForm((prev) => ({ ...prev, image_url: url }))}
+            />
+          )}
 
           {/* File attachments for inventory, insurance, finance */}
           {(entity === "inventory" || entity === "insurance" || entity === "finance") && (
