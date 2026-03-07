@@ -198,7 +198,7 @@ export default function NotebookPage() {
             </button>
           </div>
         </header>
-        <div className="flex-1 overflow-auto p-5 sm:p-8 max-w-4xl mx-auto w-full">
+        <div className="flex-1 overflow-auto px-4 sm:px-6 py-5 sm:py-8 w-full">
           {viewing.title && (
             <h1 className="text-2xl font-bold mb-5">{viewing.title}</h1>
           )}
@@ -261,7 +261,7 @@ export default function NotebookPage() {
             </button>
           </div>
         </header>
-        <div className="flex-1 flex flex-col p-5 sm:p-8 max-w-4xl mx-auto w-full">
+        <div className="flex-1 flex flex-col px-4 sm:px-6 py-5 sm:py-8 w-full">
           <input
             type="text"
             placeholder="כותרת (אופציונלי)"
@@ -309,7 +309,7 @@ export default function NotebookPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-5 sm:p-8">
+      <main className="px-4 sm:px-6 py-5 sm:py-8">
         {/* Search & Filter */}
         <div className="flex gap-3 mb-6">
           <input
