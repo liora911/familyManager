@@ -104,9 +104,9 @@ function ChevronLeftIcon({ className }: { className?: string }) {
 
 function Stat({ label, value, warn }: { label: string; value: string | number; warn?: boolean }) {
   return (
-    <div className={`flex flex-col items-center px-4 py-2 rounded-xl ${warn ? "bg-red-500/10" : "bg-tag"}`}>
-      <span className={`text-lg sm:text-xl font-bold ${warn ? "text-red-500" : "text-primary"}`}>{value}</span>
-      <span className="text-[10px] sm:text-xs text-muted">{label}</span>
+    <div className={`flex flex-col items-center px-5 py-3 rounded-xl ${warn ? "bg-red-500/10" : "bg-tag"}`}>
+      <span className={`text-xl sm:text-2xl font-bold ${warn ? "text-red-500" : "text-primary"}`}>{value}</span>
+      <span className="text-sm text-muted">{label}</span>
     </div>
   );
 }
@@ -135,7 +135,7 @@ function InsuranceRow({ data }: { data: InsurancePolicy[] }) {
               <h2 className="text-lg sm:text-xl font-semibold text-primary">ביטוח</h2>
               <ChevronLeftIcon className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-sm text-secondary mt-0.5">פוליסות ביטוח, תוקף, איש קשר</p>
+            <p className="text-base text-secondary mt-0.5">פוליסות ביטוח, תוקף, איש קשר</p>
 
             {total > 0 && (
               <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
@@ -176,7 +176,7 @@ function FinanceRow({ data }: { data: FinanceRecord[] }) {
               <h2 className="text-lg sm:text-xl font-semibold text-primary">כספים</h2>
               <ChevronLeftIcon className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-sm text-secondary mt-0.5">הכנסות, הוצאות, השקעות, חסכונות</p>
+            <p className="text-base text-secondary mt-0.5">הכנסות, הוצאות, השקעות, חסכונות</p>
 
             {total > 0 && (
               <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
@@ -201,20 +201,20 @@ function CvRow({ data }: { data: CvSection[] }) {
   return (
     <Link href="/resources/cv" className="block group">
       <div
-        className="bg-card rounded-2xl border border-border p-5 sm:p-6 transition-all
+        className="bg-card rounded-2xl border border-border p-5 sm:p-7 transition-all
                    hover:border-divider hover:shadow-md active:scale-[0.99]"
         style={{ boxShadow: "0 1px 3px var(--color-shadow)" }}
       >
         <div className="flex items-start gap-5">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-            <DocIcon className="w-7 h-7 sm:w-8 sm:h-8 text-purple-500" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <DocIcon className="w-8 h-8 sm:w-9 sm:h-9 text-purple-500" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-primary">קורות חיים</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-primary">קורות חיים</h2>
               <ChevronLeftIcon className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-sm text-secondary mt-0.5">השכלה, ניסיון, מיומנויות</p>
+            <p className="text-base text-secondary mt-0.5">השכלה, ניסיון, מיומנויות</p>
 
             {total > 0 && (
               <div className="flex flex-wrap gap-2 sm:gap-3 mt-3">
@@ -237,20 +237,20 @@ function NotebookRow({ data }: { data: NotebookEntry[] }) {
   return (
     <Link href="/resources/notebook" className="block group">
       <div
-        className="bg-card rounded-2xl border border-border p-4 sm:p-5 transition-all
+        className="bg-card rounded-2xl border border-border p-5 sm:p-7 transition-all
                    hover:border-divider hover:shadow-md active:scale-[0.99]"
         style={{ boxShadow: "0 1px 3px var(--color-shadow)" }}
       >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-            <BookIcon className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <BookIcon className="w-8 h-8 sm:w-9 sm:h-9 text-amber-600" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-semibold text-primary">מחברת</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-primary">מחברת</h2>
               <ChevronLeftIcon className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-xs sm:text-sm text-secondary">
+            <p className="text-base text-secondary">
               {total > 0
                 ? `${total} רשומות${pinned > 0 ? ` · ${pinned} נעוצות` : ""}`
                 : "רעיונות, חלומות, מחשבות"}
@@ -298,9 +298,9 @@ export default function ResourcesPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-4 sm:p-6">
+      <main className="px-4 sm:px-8 py-5 sm:py-8">
         {loading ? (
-          <div className="text-center py-16 text-muted text-sm">טוען...</div>
+          <div className="text-center py-16 text-muted text-lg">טוען...</div>
         ) : (
           <div className="space-y-4">
             <InsuranceRow data={data?.insurance || []} />

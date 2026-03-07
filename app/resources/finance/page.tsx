@@ -101,7 +101,7 @@ function MonthNavigator({
       {!isCurrent && (
         <button
           onClick={() => onChange(getCurrentMonth())}
-          className="text-xs text-link hover:text-link-hover px-2 py-1 rounded-lg hover:bg-hover transition-colors"
+          className="text-sm text-link hover:text-link-hover px-3 py-1 rounded-lg hover:bg-hover transition-colors"
         >
           היום
         </button>
@@ -127,17 +127,17 @@ function RecordCard({
   const sym = CURRENCY_SYMBOL[r.currency] || r.currency;
 
   return (
-    <div className="bg-card rounded-xl border border-border p-3">
+    <div className="bg-card rounded-xl border border-border p-5">
       {/* Row 1: Badge + recurring + amount */}
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-0.5 rounded-full border ${catConf.color}`}>
+          <span className={`text-sm px-3 py-1 rounded-full border ${catConf.color}`}>
             {catConf.label}
           </span>
-          {r.is_recurring && <span className="text-xs text-muted">🔄</span>}
+          {r.is_recurring && <span className="text-base text-muted">🔄</span>}
         </div>
         <span
-          className={`text-sm font-bold ${
+          className={`text-lg font-bold ${
             r.category === "income"
               ? "text-green-500"
               : r.category === "expense"
@@ -152,11 +152,11 @@ function RecordCard({
       </div>
 
       {/* Row 2: Title */}
-      <p className="font-medium text-sm">{r.title}</p>
+      <p className="font-medium text-base">{r.title}</p>
 
       {/* Row 3: Meta + actions */}
-      <div className="flex items-center justify-between mt-1.5">
-        <div className="flex flex-wrap gap-2 text-xs text-secondary">
+      <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-wrap gap-3 text-sm text-secondary">
           {r.record_date && <span>{formatDate(r.record_date)}</span>}
           {r.is_recurring && r.recurrence_rule && (
             <span className="text-muted">🔄 {r.recurrence_rule === "monthly" ? "חודשי" : r.recurrence_rule === "quarterly" ? "רבעוני" : r.recurrence_rule === "yearly" ? "שנתי" : r.recurrence_rule}</span>
@@ -166,21 +166,21 @@ function RecordCard({
         <div className="flex gap-1">
           <button
             onClick={onEdit}
-            className="text-xs text-muted hover:text-primary p-1 rounded-lg hover:bg-hover transition-colors"
+            className="text-lg text-muted hover:text-primary p-2 rounded-lg hover:bg-hover transition-colors"
             title="ערוך"
           >
             ✏️
           </button>
           <button
             onClick={onDuplicate}
-            className="text-xs text-muted hover:text-blue-500 p-1 rounded-lg hover:bg-hover transition-colors"
+            className="text-lg text-muted hover:text-blue-500 p-2 rounded-lg hover:bg-hover transition-colors"
             title="שכפל"
           >
             📋
           </button>
           <button
             onClick={onDelete}
-            className="text-xs text-muted hover:text-red-500 p-1 rounded-lg hover:bg-hover transition-colors"
+            className="text-lg text-muted hover:text-red-500 p-2 rounded-lg hover:bg-hover transition-colors"
             title="מחק"
           >
             🗑️
@@ -189,18 +189,18 @@ function RecordCard({
       </div>
 
       {/* Row 4: Notes */}
-      {r.notes && <p className="text-xs text-muted mt-1 truncate">{r.notes}</p>}
+      {r.notes && <p className="text-sm text-muted mt-2 truncate">{r.notes}</p>}
 
       {/* Row 5: Attachments */}
       {r.attachments && r.attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
+        <div className="flex flex-wrap gap-2 mt-3">
           {r.attachments.map((att, i) => (
             <a
               key={i}
               href={att.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-link hover:underline bg-tag px-2 py-0.5 rounded-full"
+              className="text-sm text-link hover:underline bg-tag px-3 py-1 rounded-full"
             >
               📎 {att.label || att.filename}
             </a>
@@ -330,58 +330,58 @@ export default function FinancePage() {
   return (
     <div dir="rtl" className="min-h-dvh bg-surface text-primary">
       {/* Header */}
-      <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+      <header className="border-b border-border bg-card px-5 sm:px-8 py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/resources")}
-              className="text-muted hover:text-primary transition-colors text-sm"
+              className="text-muted hover:text-primary transition-colors text-base"
             >
-              → חזרה
+              ← חזרה
             </button>
             <div>
-              <h1 className="text-xl font-medium">💰 כספים</h1>
-              <p className="text-sm text-secondary">ניהול הכנסות והוצאות</p>
+              <h1 className="text-2xl font-semibold">💰 כספים</h1>
+              <p className="text-base text-secondary mt-0.5">ניהול הכנסות והוצאות</p>
             </div>
           </div>
           <button
             onClick={() => setModal({ mode: "create" })}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-base font-medium px-5 py-2.5 rounded-xl transition-colors"
           >
             + הוסף
           </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6">
+      <main className="px-4 sm:px-8 py-5 sm:py-8">
         {/* Month Navigator */}
         <MonthNavigator currentMonth={currentMonth} onChange={setCurrentMonth} />
 
         {/* Summary Cards */}
         {!loading && (
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center">
-              <p className="text-xs text-green-500 mb-1">הכנסות</p>
-              <p className="text-lg font-bold text-green-500">
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
+              <p className="text-sm text-green-500 mb-1">הכנסות</p>
+              <p className="text-xl font-bold text-green-500">
                 ₪{income.toLocaleString()}
               </p>
             </div>
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-              <p className="text-xs text-red-500 mb-1">הוצאות</p>
-              <p className="text-lg font-bold text-red-500">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+              <p className="text-sm text-red-500 mb-1">הוצאות</p>
+              <p className="text-xl font-bold text-red-500">
                 ₪{expense.toLocaleString()}
               </p>
             </div>
             <div
-              className={`rounded-xl p-3 text-center border ${
+              className={`rounded-xl p-4 text-center border ${
                 balance >= 0
                   ? "bg-blue-500/10 border-blue-500/30"
                   : "bg-orange-500/10 border-orange-500/30"
               }`}
             >
-              <p className="text-xs text-secondary mb-1">מאזן</p>
+              <p className="text-sm text-secondary mb-1">מאזן</p>
               <p
-                className={`text-lg font-bold ${
+                className={`text-xl font-bold ${
                   balance >= 0 ? "text-blue-500" : "text-orange-500"
                 }`}
               >
@@ -393,21 +393,21 @@ export default function FinancePage() {
 
         {/* Recurring Expenses Section */}
         {recurring.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-6">
             <button
               onClick={() => setRecurringOpen(!recurringOpen)}
-              className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium hover:bg-hover transition-colors"
+              className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 text-base font-medium hover:bg-hover transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span>🔄</span>
                 <span>הוצאות קבועות</span>
-                <span className="text-xs text-muted">({recurring.length})</span>
+                <span className="text-sm text-muted">({recurring.length})</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-red-500 font-bold">
+                <span className="text-sm text-red-500 font-bold">
                   ₪{recurringTotal.toLocaleString()}/חודש
                 </span>
-                <span className="text-muted text-xs">
+                <span className="text-muted text-sm">
                   {recurringOpen ? "▾" : "◂"}
                 </span>
               </div>
@@ -429,19 +429,19 @@ export default function FinancePage() {
         )}
 
         {/* Search & Filter */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-3 mb-6">
           <input
             type="text"
             placeholder="חיפוש..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 border border-divider rounded-xl px-3 py-2 text-sm bg-input text-primary
+            className="flex-1 border border-divider rounded-xl px-4 py-3 text-base bg-input text-primary
                        focus:outline-none focus:border-blue-500"
           />
           <select
             value={filterCat}
             onChange={(e) => setFilterCat(e.target.value)}
-            className="border border-divider rounded-xl px-3 py-2 text-sm bg-input text-primary"
+            className="border border-divider rounded-xl px-4 py-3 text-base bg-input text-primary"
           >
             <option value="">הכל</option>
             {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
@@ -454,11 +454,11 @@ export default function FinancePage() {
 
         {/* Records */}
         {loading ? (
-          <div className="text-center py-12 text-muted text-sm">טוען...</div>
+          <div className="text-center py-16 text-muted text-lg">טוען...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted">
-            <div className="text-4xl mb-2">💰</div>
-            <p className="text-sm">
+          <div className="text-center py-16 text-muted">
+            <div className="text-5xl mb-3">💰</div>
+            <p className="text-lg">
               {records.length === 0
                 ? "אין רשומות בחודש זה"
                 : "אין תוצאות לחיפוש"}

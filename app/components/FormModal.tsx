@@ -568,7 +568,7 @@ export default function FormModal({
                         setForm((prev) => ({ ...prev, [`spec_${pf.key}`]: e.target.value }))
                       }
                       placeholder={pf.placeholder}
-                      className="w-full border border-divider rounded-lg px-3 py-2 text-sm bg-input text-primary
+                      className="w-full border border-divider rounded-lg px-3 py-2 text-base bg-input text-primary
                                  focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
@@ -580,7 +580,7 @@ export default function FormModal({
           {/* Regular form fields */}
           {fields.map((field) => (
             <div key={field.key}>
-              <label className="block text-sm font-medium text-secondary mb-1">
+              <label className="block text-base font-medium text-secondary mb-1.5">
                 {field.label}
                 {field.required && <span className="text-red-500 mr-1">*</span>}
               </label>
@@ -592,7 +592,7 @@ export default function FormModal({
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
                   required={field.required}
-                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-sm bg-input text-primary
+                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-base bg-input text-primary
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">בחר...</option>
@@ -610,7 +610,7 @@ export default function FormModal({
                   }
                   required={field.required}
                   rows={4}
-                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-sm bg-input text-primary
+                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-base bg-input text-primary
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-y"
                 />
               ) : field.type === "checkbox" ? (
@@ -623,7 +623,7 @@ export default function FormModal({
                     }
                     className="w-4 h-4 rounded border-border text-blue-600"
                   />
-                  <span className="text-sm text-secondary">כן</span>
+                  <span className="text-base text-secondary">כן</span>
                 </label>
               ) : (
                 <input
@@ -639,7 +639,7 @@ export default function FormModal({
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
                   required={field.required}
-                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-sm bg-input text-primary
+                  className="w-full border border-divider rounded-xl px-3 py-2.5 text-base bg-input text-primary
                              focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               )}
@@ -655,7 +655,7 @@ export default function FormModal({
           )}
 
           {error && (
-            <p className="text-sm text-red-500 bg-badge-red-bg rounded-lg px-3 py-2">
+            <p className="text-base text-red-500 bg-badge-red-bg rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -665,14 +665,14 @@ export default function FormModal({
               type="submit"
               disabled={saving}
               className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-disabled
-                         text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
+                         text-white font-medium py-2.5 rounded-xl transition-colors text-base"
             >
               {saving ? "שומר..." : mode === "create" ? "הוסף" : "שמור"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 border border-divider rounded-xl text-sm text-secondary
+              className="px-6 py-2.5 border border-divider rounded-xl text-base text-secondary
                          hover:bg-hover transition-colors"
             >
               ביטול

@@ -103,44 +103,44 @@ export default function InsurancePage() {
 
   return (
     <div dir="rtl" className="min-h-dvh bg-surface text-primary">
-      <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+      <header className="border-b border-border bg-card px-5 sm:px-8 py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/resources")}
-              className="text-muted hover:text-primary transition-colors text-sm"
+              className="text-muted hover:text-primary transition-colors text-base"
             >
-              → חזרה
+              ← חזרה
             </button>
             <div>
-              <h1 className="text-xl font-medium">🛡️ ביטוח</h1>
-              <p className="text-sm text-secondary">פוליסות ביטוח</p>
+              <h1 className="text-2xl font-semibold">🛡️ ביטוח</h1>
+              <p className="text-base text-secondary mt-0.5">פוליסות ביטוח</p>
             </div>
           </div>
           <button
             onClick={() => setModal({ mode: "create" })}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-base font-medium px-5 py-2.5 rounded-xl transition-colors"
           >
             + הוסף פוליסה
           </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6">
+      <main className="px-4 sm:px-8 py-5 sm:py-8">
         {/* Search & Filter */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-3 mb-6">
           <input
             type="text"
             placeholder="חיפוש..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 border border-divider rounded-xl px-3 py-2 text-sm bg-input text-primary
+            className="flex-1 border border-divider rounded-xl px-4 py-3 text-base bg-input text-primary
                        focus:outline-none focus:border-blue-500"
           />
           <select
             value={filterCat}
             onChange={(e) => setFilterCat(e.target.value)}
-            className="border border-divider rounded-xl px-3 py-2 text-sm bg-input text-primary"
+            className="border border-divider rounded-xl px-4 py-3 text-base bg-input text-primary"
           >
             <option value="">כל הקטגוריות</option>
             {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
@@ -150,24 +150,24 @@ export default function InsurancePage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted text-sm">טוען...</div>
+          <div className="text-center py-16 text-muted text-lg">טוען...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted">
-            <div className="text-4xl mb-2">🛡️</div>
-            <p className="text-sm">אין פוליסות ביטוח</p>
+          <div className="text-center py-16 text-muted">
+            <div className="text-5xl mb-3">🛡️</div>
+            <p className="text-lg">אין פוליסות ביטוח</p>
           </div>
         ) : (
           <div className="space-y-6">
             {Object.entries(grouped).map(([cat, policies]) => (
               <div key={cat}>
-                <h2 className="text-sm font-medium text-muted mb-2">
+                <h2 className="text-lg font-semibold text-muted mb-3">
                   {CATEGORY_LABELS[cat] || cat}
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {policies.map((p) => (
                     <div
                       key={p.id}
-                      className={`bg-card rounded-xl border p-4 transition-colors ${
+                      className={`bg-card rounded-xl border p-5 sm:p-6 transition-colors ${
                         isExpired(p.end_date)
                           ? "border-red-500/40 bg-red-500/5"
                           : isExpiringSoon(p.end_date)
@@ -175,15 +175,15 @@ export default function InsurancePage() {
                             : "border-border"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium">{p.title}</p>
-                          <div className="flex flex-wrap gap-2 mt-2 text-xs text-secondary">
-                            {p.provider && <span className="bg-tag px-2 py-0.5 rounded-full">{p.provider}</span>}
-                            {p.policy_number && <span className="bg-tag px-2 py-0.5 rounded-full font-mono" dir="ltr">#{p.policy_number}</span>}
-                            {p.member_name && <span className="bg-tag px-2 py-0.5 rounded-full">👤 {p.member_name}</span>}
+                          <p className="font-semibold text-lg">{p.title}</p>
+                          <div className="flex flex-wrap gap-2 mt-3 text-sm text-secondary">
+                            {p.provider && <span className="bg-tag px-3 py-1 rounded-full">{p.provider}</span>}
+                            {p.policy_number && <span className="bg-tag px-3 py-1 rounded-full font-mono" dir="ltr">#{p.policy_number}</span>}
+                            {p.member_name && <span className="bg-tag px-3 py-1 rounded-full">👤 {p.member_name}</span>}
                           </div>
-                          <div className="flex flex-wrap gap-2 mt-2 text-xs text-secondary">
+                          <div className="flex flex-wrap gap-3 mt-3 text-base text-secondary">
                             {p.monthly_cost && <span>💰 ₪{p.monthly_cost}/חודש</span>}
                             {p.start_date && <span>📅 מ-{formatDate(p.start_date)}</span>}
                             {p.end_date && (
@@ -194,20 +194,20 @@ export default function InsurancePage() {
                             )}
                           </div>
                           {p.contact_name && (
-                            <p className="text-xs text-secondary mt-1">
+                            <p className="text-base text-secondary mt-2">
                               📞 {p.contact_name} {p.contact_phone || ""}
                             </p>
                           )}
-                          {p.notes && <p className="text-xs text-muted mt-1">{p.notes}</p>}
+                          {p.notes && <p className="text-sm text-muted mt-2">{p.notes}</p>}
                           {p.attachments && p.attachments.length > 0 && (
-                            <div className="flex gap-2 mt-2">
+                            <div className="flex gap-2 mt-3">
                               {p.attachments.map((att, i) => (
                                 <a
                                   key={i}
                                   href={att.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-link hover:underline bg-tag px-2 py-0.5 rounded-full"
+                                  className="text-sm text-link hover:underline bg-tag px-3 py-1 rounded-full"
                                 >
                                   📎 {att.label || att.filename}
                                 </a>
@@ -237,13 +237,13 @@ export default function InsurancePage() {
                                 },
                               })
                             }
-                            className="text-xs text-muted hover:text-primary p-1.5 rounded-lg hover:bg-hover transition-colors"
+                            className="text-lg text-muted hover:text-primary p-2 rounded-lg hover:bg-hover transition-colors"
                           >
                             ✏️
                           </button>
                           <button
                             onClick={() => handleDelete(p.id, p.title)}
-                            className="text-xs text-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-hover transition-colors"
+                            className="text-lg text-muted hover:text-red-500 p-2 rounded-lg hover:bg-hover transition-colors"
                           >
                             🗑️
                           </button>

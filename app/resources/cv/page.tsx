@@ -78,18 +78,18 @@ export default function CvPage() {
 
   return (
     <div dir="rtl" className="min-h-dvh bg-surface text-primary">
-      <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+      <header className="border-b border-border bg-card px-5 sm:px-8 py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/resources")}
-              className="text-muted hover:text-primary transition-colors text-sm"
+              className="text-muted hover:text-primary transition-colors text-base"
             >
-              → חזרה
+              ← חזרה
             </button>
             <div>
-              <h1 className="text-xl font-medium">📄 קורות חיים</h1>
-              <p className="text-sm text-secondary">ניהול קורות חיים אישיים</p>
+              <h1 className="text-2xl font-semibold">📄 קורות חיים</h1>
+              <p className="text-base text-secondary mt-0.5">ניהול קורות חיים אישיים</p>
             </div>
           </div>
           <button
@@ -99,21 +99,21 @@ export default function CvPage() {
                 initial: { member_name: activeMember },
               })
             }
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-base font-medium px-5 py-2.5 rounded-xl transition-colors"
           >
             + הוסף סעיף
           </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6">
+      <main className="px-4 sm:px-8 py-5 sm:py-8">
         {/* Member tabs */}
         <div className="flex gap-1 bg-tag rounded-lg p-1 w-fit mb-6">
           {FAMILY_MEMBERS.map((name) => (
             <button
               key={name}
               onClick={() => setActiveMember(name)}
-              className={`text-sm px-4 py-2 rounded-md transition-colors ${
+              className={`text-base px-5 py-2.5 rounded-md transition-colors ${
                 activeMember === name
                   ? "bg-card text-primary shadow-sm font-medium"
                   : "text-secondary hover:text-primary"
@@ -125,11 +125,11 @@ export default function CvPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted text-sm">טוען...</div>
+          <div className="text-center py-16 text-muted text-lg">טוען...</div>
         ) : Object.keys(grouped).length === 0 ? (
-          <div className="text-center py-12 text-muted">
-            <div className="text-4xl mb-2">📄</div>
-            <p className="text-sm">אין נתוני קורות חיים עבור {activeMember}</p>
+          <div className="text-center py-16 text-muted">
+            <div className="text-5xl mb-3">📄</div>
+            <p className="text-lg">אין נתוני קורות חיים עבור {activeMember}</p>
             <button
               onClick={() =>
                 setModal({
@@ -137,7 +137,7 @@ export default function CvPage() {
                   initial: { member_name: activeMember },
                 })
               }
-              className="mt-3 text-link hover:underline text-sm"
+              className="mt-4 text-link hover:underline text-base"
             >
               הוסף סעיף ראשון
             </button>
@@ -148,8 +148,8 @@ export default function CvPage() {
               const conf = SECTION_CONFIG[type] || SECTION_CONFIG.other;
               return (
                 <div key={type}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-sm font-medium text-muted">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-muted">
                       {conf.icon} {conf.label}
                     </h2>
                     <button
@@ -159,24 +159,24 @@ export default function CvPage() {
                           initial: { member_name: activeMember, section_type: type },
                         })
                       }
-                      className="text-xs text-link hover:underline"
+                      className="text-sm text-link hover:underline"
                     >
                       + הוסף
                     </button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {sections.map((s) => (
                       <div
                         key={s.id}
-                        className="bg-card rounded-xl border border-border p-4"
+                        className="bg-card rounded-xl border border-border p-5"
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium">{s.title}</p>
+                            <p className="font-semibold text-lg">{s.title}</p>
                             {s.organization && (
-                              <p className="text-sm text-secondary mt-0.5">{s.organization}</p>
+                              <p className="text-base text-secondary mt-1">{s.organization}</p>
                             )}
-                            <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-muted">
+                            <div className="flex flex-wrap gap-2 mt-2 text-sm text-muted">
                               {s.start_date && (
                                 <span>
                                   {formatDate(s.start_date)}
@@ -189,7 +189,7 @@ export default function CvPage() {
                               )}
                             </div>
                             {s.description && (
-                              <p className="text-sm text-secondary mt-2 whitespace-pre-wrap">
+                              <p className="text-base text-secondary mt-3 whitespace-pre-wrap">
                                 {s.description}
                               </p>
                             )}
@@ -213,13 +213,13 @@ export default function CvPage() {
                                   },
                                 })
                               }
-                              className="text-xs text-muted hover:text-primary p-1.5 rounded-lg hover:bg-hover transition-colors"
+                              className="text-lg text-muted hover:text-primary p-2 rounded-lg hover:bg-hover transition-colors"
                             >
                               ✏️
                             </button>
                             <button
                               onClick={() => handleDelete(s.id, s.title)}
-                              className="text-xs text-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-hover transition-colors"
+                              className="text-lg text-muted hover:text-red-500 p-2 rounded-lg hover:bg-hover transition-colors"
                             >
                               🗑️
                             </button>
