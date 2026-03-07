@@ -53,7 +53,9 @@ function saveMessages(msgs: Message[]) {
 
 // ── Image helpers ───────────────────────────────────────────────────
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (PDFs can be larger)
+// Vercel serverless has a 4.5MB body limit; base64 adds ~33% overhead
+// So raw file max ≈ 3MB → ~4MB base64 + JSON → under 4.5MB
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, "application/pdf"];
 
@@ -150,7 +152,10 @@ const ChatPanel = forwardRef<
 
     for (const file of Array.from(files)) {
       if (!ALLOWED_FILE_TYPES.includes(file.type)) continue;
-      if (file.size > MAX_FILE_SIZE) continue;
+      if (file.size > MAX_FILE_SIZE) {
+        alert(`הקובץ "${file.name}" גדול מדי (מקסימום 3MB)`);
+        continue;
+      }
       if (pendingFiles.length >= 4) break;
 
       const isPdf = file.type === "application/pdf";
