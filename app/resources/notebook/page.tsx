@@ -166,43 +166,43 @@ export default function NotebookPage() {
     return true;
   });
 
-  // Full-screen view (rendered markdown)
+  // ── Full-screen view (rendered markdown) ──────────────────────────
   if (viewing) {
     const catConf = CATEGORY_CONFIG[viewing.category] || CATEGORY_CONFIG.general;
     return (
       <div dir="rtl" className="min-h-dvh bg-surface text-primary flex flex-col">
-        <header className="border-b border-border bg-card px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <header className="border-b border-border bg-card px-5 sm:px-8 py-4 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setViewing(null)}
-              className="text-muted hover:text-primary transition-colors text-sm"
+              className="text-muted hover:text-primary transition-colors text-base"
             >
               ← חזרה
             </button>
-            <span className="text-xs text-muted bg-tag px-2 py-0.5 rounded-full">
+            <span className="text-sm text-muted bg-tag px-3 py-1 rounded-full">
               {catConf.icon} {catConf.label}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => handleDelete(viewing.id, viewing.title || "רשומה").then(() => setViewing(null))}
-              className="text-muted hover:text-red-500 transition-colors text-sm px-3 py-1.5"
+              className="text-muted hover:text-red-500 transition-colors text-lg px-3 py-2"
             >
               🗑️
             </button>
             <button
               onClick={openEditFromView}
-              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-base font-medium px-5 py-2 rounded-lg transition-colors"
             >
               ✏️ עריכה
             </button>
           </div>
         </header>
-        <div className="flex-1 overflow-auto p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        <div className="flex-1 overflow-auto p-5 sm:p-8 max-w-4xl mx-auto w-full">
           {viewing.title && (
-            <h1 className="text-xl font-bold mb-4">{viewing.title}</h1>
+            <h1 className="text-2xl font-bold mb-5">{viewing.title}</h1>
           )}
-          <div className="prose prose-sm prose-invert max-w-none
+          <div className="prose prose-base prose-invert max-w-none
             prose-headings:text-primary prose-headings:font-bold
             prose-p:text-secondary prose-p:leading-relaxed
             prose-strong:text-primary prose-em:text-secondary
@@ -216,7 +216,7 @@ export default function NotebookPage() {
               {viewing.content}
             </ReactMarkdown>
           </div>
-          <p className="text-[10px] text-muted mt-6">
+          <p className="text-sm text-muted mt-8">
             {timeAgo(viewing.updated_at || viewing.created_at)}
           </p>
         </div>
@@ -224,27 +224,27 @@ export default function NotebookPage() {
     );
   }
 
-  // Full-screen editor
+  // ── Full-screen editor ────────────────────────────────────────────
   if (editing) {
     return (
       <div dir="rtl" className="min-h-dvh bg-surface text-primary flex flex-col">
-        <header className="border-b border-border bg-card px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <header className="border-b border-border bg-card px-5 sm:px-8 py-4 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setEditing(null)}
-              className="text-muted hover:text-primary transition-colors text-sm"
+              className="text-muted hover:text-primary transition-colors text-base"
             >
-              → חזרה
+              ← חזרה
             </button>
-            <span className="text-sm text-secondary">
+            <span className="text-base text-secondary">
               {editing.id ? "עריכת רשומה" : "רשומה חדשה"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <select
               value={editorCategory}
               onChange={(e) => setEditorCategory(e.target.value)}
-              className="border border-divider rounded-lg px-2 py-1.5 text-xs bg-input text-primary"
+              className="border border-divider rounded-lg px-3 py-2 text-sm bg-input text-primary"
             >
               {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -255,26 +255,26 @@ export default function NotebookPage() {
             <button
               onClick={handleSave}
               disabled={saving || !editorContent.trim()}
-              className="bg-blue-600 hover:bg-blue-500 disabled:bg-disabled text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+              className="bg-blue-600 hover:bg-blue-500 disabled:bg-disabled text-white text-base font-medium px-5 py-2 rounded-lg transition-colors"
             >
               {saving ? "שומר..." : "שמור"}
             </button>
           </div>
         </header>
-        <div className="flex-1 flex flex-col p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        <div className="flex-1 flex flex-col p-5 sm:p-8 max-w-4xl mx-auto w-full">
           <input
             type="text"
             placeholder="כותרת (אופציונלי)"
             value={editorTitle}
             onChange={(e) => setEditorTitle(e.target.value)}
-            className="border-none bg-transparent text-xl font-medium text-primary placeholder:text-muted
-                       focus:outline-none mb-3 px-1"
+            className="border-none bg-transparent text-2xl font-medium text-primary placeholder:text-muted
+                       focus:outline-none mb-4 px-1"
           />
           <textarea
             placeholder="התחל לכתוב..."
             value={editorContent}
             onChange={(e) => setEditorContent(e.target.value)}
-            className="flex-1 border-none bg-transparent text-sm text-primary placeholder:text-muted
+            className="flex-1 border-none bg-transparent text-base text-primary placeholder:text-muted
                        focus:outline-none resize-none px-1 leading-relaxed"
             autoFocus
           />
@@ -283,46 +283,47 @@ export default function NotebookPage() {
     );
   }
 
+  // ── List view ─────────────────────────────────────────────────────
   return (
     <div dir="rtl" className="min-h-dvh bg-surface text-primary">
-      <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+      <header className="border-b border-border bg-card px-5 sm:px-8 py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/resources")}
-              className="text-muted hover:text-primary transition-colors text-sm"
+              className="text-muted hover:text-primary transition-colors text-base"
             >
-              → חזרה
+              ← חזרה
             </button>
             <div>
-              <h1 className="text-xl font-medium">📓 מחברת</h1>
-              <p className="text-sm text-secondary">רעיונות, מחשבות, רשימות</p>
+              <h1 className="text-2xl font-semibold">📓 מחברת</h1>
+              <p className="text-base text-secondary mt-0.5">רעיונות, מחשבות, רשימות</p>
             </div>
           </div>
           <button
             onClick={openNew}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-base font-medium px-5 py-2.5 rounded-xl transition-colors"
           >
             + רשומה חדשה
           </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6">
+      <main className="max-w-4xl mx-auto p-5 sm:p-8">
         {/* Search & Filter */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-3 mb-6">
           <input
             type="text"
             placeholder="חיפוש..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 border border-divider rounded-xl px-3 py-2 text-sm bg-input text-primary
+            className="flex-1 border border-divider rounded-xl px-4 py-3 text-base bg-input text-primary
                        focus:outline-none focus:border-blue-500"
           />
           <select
             value={filterCat}
             onChange={(e) => setFilterCat(e.target.value)}
-            className="border border-divider rounded-xl px-3 py-2 text-sm bg-input text-primary"
+            className="border border-divider rounded-xl px-4 py-3 text-base bg-input text-primary"
           >
             <option value="">הכל</option>
             {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
@@ -332,17 +333,17 @@ export default function NotebookPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted text-sm">טוען...</div>
+          <div className="text-center py-16 text-muted text-lg">טוען...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted">
-            <div className="text-4xl mb-2">📓</div>
-            <p className="text-sm">המחברת ריקה</p>
-            <button onClick={openNew} className="mt-3 text-link hover:underline text-sm">
+          <div className="text-center py-16 text-muted">
+            <div className="text-5xl mb-3">📓</div>
+            <p className="text-lg">המחברת ריקה</p>
+            <button onClick={openNew} className="mt-4 text-link hover:underline text-base">
               כתוב רשומה ראשונה
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filtered.map((entry) => {
               const catConf = CATEGORY_CONFIG[entry.category] || CATEGORY_CONFIG.general;
               return (
@@ -354,32 +355,32 @@ export default function NotebookPage() {
                   }`}
                 >
                   {/* Category icon strip — full height right side */}
-                  <div className="flex-shrink-0 w-16 bg-surface/50 border-l border-border flex items-center justify-center">
-                    <span className="text-3xl opacity-70">{catConf.icon}</span>
+                  <div className="flex-shrink-0 w-20 bg-surface/50 border-l border-border flex items-center justify-center">
+                    <span className="text-4xl opacity-70">{catConf.icon}</span>
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 min-w-0 p-4">
-                    <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0 p-5">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          {entry.is_pinned && <span className="text-amber-500">📌</span>}
-                          <p className="font-semibold text-base">
+                          {entry.is_pinned && <span className="text-amber-500 text-lg">📌</span>}
+                          <p className="font-semibold text-lg">
                             {entry.title || "ללא כותרת"}
                           </p>
-                          <span className="text-xs text-muted">{catConf.label}</span>
+                          <span className="text-sm text-muted">{catConf.label}</span>
                         </div>
-                        <p className="text-sm text-secondary mt-2 line-clamp-2 whitespace-pre-wrap">
+                        <p className="text-base text-secondary mt-2 line-clamp-2 whitespace-pre-wrap leading-relaxed">
                           {stripMarkdown(entry.content)}
                         </p>
-                        <p className="text-xs text-muted mt-2">
+                        <p className="text-sm text-muted mt-3">
                           {timeAgo(entry.updated_at || entry.created_at)}
                         </p>
                       </div>
                       <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleTogglePin(entry)}
-                          className={`text-xs p-1.5 rounded-lg hover:bg-hover transition-colors ${
+                          className={`text-lg p-2 rounded-lg hover:bg-hover transition-colors ${
                             entry.is_pinned ? "text-amber-500" : "text-muted hover:text-amber-500"
                           }`}
                           title={entry.is_pinned ? "בטל נעיצה" : "נעץ"}
@@ -388,7 +389,7 @@ export default function NotebookPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(entry.id, entry.title || "רשומה")}
-                          className="text-xs text-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-hover transition-colors"
+                          className="text-lg text-muted hover:text-red-500 p-2 rounded-lg hover:bg-hover transition-colors"
                         >
                           🗑️
                         </button>
