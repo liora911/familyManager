@@ -278,19 +278,21 @@ export default function ResourcesPage() {
 
   return (
     <div dir="rtl" className="min-h-dvh bg-surface text-primary">
-      <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-        <div className="flex items-center gap-3">
+      <header className="border-b border-border bg-card px-5 sm:px-8 py-5">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => router.push("/")}
-            className="text-muted hover:text-primary transition-colors p-1 rounded-lg hover:bg-hover"
+            className="text-muted hover:text-primary transition-colors p-2.5 rounded-xl hover:bg-hover border border-border"
+            title="חזרה לדף הראשי"
           >
-            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.47 3.841a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.061l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.689z" />
+              <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.432z" />
             </svg>
           </button>
           <div>
-            <h1 className="text-xl font-semibold">משאבים</h1>
-            <p className="text-sm text-secondary">ניהול מסמכים ומידע אישי</p>
+            <h1 className="text-2xl font-semibold">משאבים</h1>
+            <p className="text-base text-secondary">ניהול מסמכים ומידע אישי</p>
           </div>
         </div>
       </header>
