@@ -8,9 +8,12 @@ const anthropic = new Anthropic();
 
 export async function POST(req: Request) {
   try {
-    const { message, history, user, files } = await req.json();
+    const body = await req.json();
+    console.log("[chat] incoming body keys:", Object.keys(body), "message length:", body.message?.length, "files:", body.files?.length);
+    const { message, history, user, files } = body;
 
     if ((!message || typeof message !== "string") && (!files || !files.length)) {
+      console.log("[chat] rejected: missing message");
       return Response.json({ error: "Missing message" }, { status: 400 });
     }
 
@@ -68,6 +71,7 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: message });
     }
 
+    console.log("[chat] calling Claude, model: claude-sonnet-4-6, messages:", messages.length, "tools:", TOOLS.length);
     let response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
@@ -76,6 +80,7 @@ export async function POST(req: Request) {
       tools: TOOLS as any,
       messages,
     });
+    console.log("[chat] Claude response, stop_reason:", response.stop_reason, "content blocks:", response.content.length);
 
     // Agentic loop — keep executing tools until Claude is done
     const allActions: { tool: string; input: unknown; result: unknown }[] = [];
@@ -88,14 +93,16 @@ export async function POST(req: Request) {
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
       for (const tool of toolBlocks) {
+        console.log("[chat] executing tool:", tool.name, "input:", JSON.stringify(tool.input).slice(0, 200));
         let result: unknown;
         try {
           result = await executeTool(
             tool.name,
             tool.input as Record<string, unknown>
           );
+          console.log("[chat] tool result:", JSON.stringify(result).slice(0, 200));
         } catch (e) {
-          console.error(`Tool ${tool.name} failed:`, e);
+          console.error(`[chat] Tool ${tool.name} failed:`, e);
           result = { error: `Tool execution failed: ${e instanceof Error ? e.message : "unknown error"}` };
         }
         allActions.push({ tool: tool.name, input: tool.input, result });
@@ -127,9 +134,11 @@ export async function POST(req: Request) {
 
     return Response.json({ response: textContent, actions: allActions });
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error("[chat] ERROR:", error);
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("[chat] error message:", msg);
     return Response.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: msg },
       { status: 500 }
     );
   }
