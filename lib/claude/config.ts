@@ -487,7 +487,7 @@ export const TOOLS = [
         },
         start_date: { type: "string", description: "ISO date" },
         end_date: { type: "string", description: "ISO date" },
-        monthly_cost: { type: "string" },
+        monthly_cost: { type: "string", description: "Monthly cost in NIS. If only annual/total cost is given, divide by 12. Store as a plain number string e.g. '125'" },
         contact_name: { type: "string" },
         contact_phone: { type: "string" },
         notes: { type: "string" },

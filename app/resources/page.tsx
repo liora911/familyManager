@@ -140,7 +140,8 @@ function InsuranceRow({ data }: { data: InsurancePolicy[] }) {
             {total > 0 && (
               <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
                 <Stat label="פוליסות" value={total} />
-                {monthlyCost > 0 && <Stat label="עלות חודשית" value={`₪${monthlyCost.toLocaleString()}`} />}
+                {monthlyCost > 0 && <Stat label="עלות חודשית" value={`₪${Math.round(monthlyCost).toLocaleString()}`} />}
+                {monthlyCost > 0 && <Stat label="עלות שנתית" value={`₪${Math.round(monthlyCost * 12).toLocaleString()}`} />}
                 {expiring > 0 && <Stat label="עומדות לפוג" value={expiring} warn />}
                 {expired > 0 && <Stat label="פגו" value={expired} warn />}
               </div>
