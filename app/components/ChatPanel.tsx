@@ -22,11 +22,12 @@ interface Message {
   timestamp: Date;
 }
 
-interface PendingImage {
+interface PendingFile {
   data: string;
   media_type: string;
   name: string;
-  preview: string; // data URL for thumbnail
+  preview: string; // data URL for thumbnail, or empty for PDFs
+  kind: "image" | "pdf";
 }
 
 // ── Persistence ──────────────────────────────────────────────────────
@@ -52,8 +53,9 @@ function saveMessages(msgs: Message[]) {
 
 // ── Image helpers ───────────────────────────────────────────────────
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (PDFs can be larger)
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, "application/pdf"];
 
 function readFileAsBase64(file: File): Promise<{ data: string; preview: string }> {
   return new Promise((resolve, reject) => {
@@ -93,7 +95,7 @@ const ChatPanel = forwardRef<
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -147,15 +149,23 @@ const ChatPanel = forwardRef<
     if (!files) return;
 
     for (const file of Array.from(files)) {
-      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) continue;
-      if (file.size > MAX_IMAGE_SIZE) continue;
-      if (pendingImages.length >= 4) break;
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) continue;
+      if (file.size > MAX_FILE_SIZE) continue;
+      if (pendingFiles.length >= 4) break;
+
+      const isPdf = file.type === "application/pdf";
 
       try {
         const { data, preview } = await readFileAsBase64(file);
-        setPendingImages((prev) => [
+        setPendingFiles((prev) => [
           ...prev.slice(0, 3), // max 4 total
-          { data, media_type: file.type, name: file.name, preview },
+          {
+            data,
+            media_type: file.type,
+            name: file.name,
+            preview: isPdf ? "" : preview,
+            kind: isPdf ? "pdf" : "image",
+          },
         ]);
       } catch {
         // skip failed reads
@@ -166,32 +176,32 @@ const ChatPanel = forwardRef<
     e.target.value = "";
   };
 
-  const removeImage = (index: number) => {
-    setPendingImages((prev) => prev.filter((_, i) => i !== index));
+  const removeFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // ── Submit ────────────────────────────────────────────────────────
 
   const handleSubmit = async (directMessage?: string) => {
     const text = directMessage || input.trim();
-    const hasImages = pendingImages.length > 0;
-    if ((!text && !hasImages) || loading) return;
+    const hasFiles = pendingFiles.length > 0;
+    if ((!text && !hasFiles) || loading) return;
 
     const userMsg: Message = {
       role: "user",
-      content: text || (hasImages ? "תמונה" : ""),
-      imageCount: hasImages ? pendingImages.length : undefined,
+      content: text || (hasFiles ? "קובץ מצורף" : ""),
+      imageCount: hasFiles ? pendingFiles.length : undefined,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
 
-    // Capture images before clearing
-    const imagesToSend = hasImages
-      ? pendingImages.map((img) => ({ data: img.data, media_type: img.media_type }))
+    // Capture files before clearing
+    const filesToSend = hasFiles
+      ? pendingFiles.map((f) => ({ data: f.data, media_type: f.media_type, kind: f.kind }))
       : undefined;
-    setPendingImages([]);
+    setPendingFiles([]);
     setLoading(true);
 
     try {
@@ -218,7 +228,7 @@ const ChatPanel = forwardRef<
           message: text,
           history,
           user,
-          images: imagesToSend,
+          files: filesToSend,
         }),
       });
       const data = await res.json();
@@ -272,7 +282,7 @@ const ChatPanel = forwardRef<
     return index >= messageCountRef.current;
   };
 
-  const canSend = input.trim() || pendingImages.length > 0;
+  const canSend = input.trim() || pendingFiles.length > 0;
 
   // ── Render ────────────────────────────────────────────────────────
 
@@ -327,13 +337,13 @@ const ChatPanel = forwardRef<
                     : undefined
                 }
               >
-                {/* Image indicator for user messages */}
+                {/* File attachment indicator for user messages */}
                 {msg.role === "user" && msg.imageCount && msg.imageCount > 0 && (
                   <div className="flex items-center gap-1 mb-1.5 text-white/70 text-xs">
                     <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a.75.75 0 00-1.06 0l-1.91 1.909-4.97-4.969a.75.75 0 00-1.06 0L2.5 11.06zm12.22-4.81a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clipRule="evenodd" />
                     </svg>
-                    <span>{msg.imageCount} {msg.imageCount === 1 ? "תמונה" : "תמונות"}</span>
+                    <span>{msg.imageCount} {msg.imageCount === 1 ? "קובץ" : "קבצים"}</span>
                   </div>
                 )}
 
@@ -421,18 +431,28 @@ const ChatPanel = forwardRef<
       {/* Input area */}
       <footer className="flex-shrink-0 p-3 sm:p-4">
         <div className="max-w-2xl mx-auto">
-          {/* Image preview strip */}
-          {pendingImages.length > 0 && (
+          {/* File preview strip */}
+          {pendingFiles.length > 0 && (
             <div className="flex gap-2 mb-2 px-1">
-              {pendingImages.map((img, i) => (
+              {pendingFiles.map((file, i) => (
                 <div key={i} className="relative group/img">
-                  <img
-                    src={img.preview}
-                    alt={img.name}
-                    className="w-12 h-12 rounded-lg object-cover border border-border"
-                  />
+                  {file.kind === "pdf" ? (
+                    <div className="w-12 h-12 rounded-lg border border-border bg-red-500/10
+                                    flex flex-col items-center justify-center">
+                      <svg className="w-5 h-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-[8px] font-bold text-red-500 mt-0.5">PDF</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={file.preview}
+                      alt={file.name}
+                      className="w-12 h-12 rounded-lg object-cover border border-border"
+                    />
+                  )}
                   <button
-                    onClick={() => removeImage(i)}
+                    onClick={() => removeFile(i)}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white
                                flex items-center justify-center text-xs opacity-0 group-hover/img:opacity-100
                                transition-opacity"
@@ -455,21 +475,21 @@ const ChatPanel = forwardRef<
             {/* Image upload button */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || pendingImages.length >= 4}
+              disabled={loading || pendingFiles.length >= 4}
               className="flex-shrink-0 w-8 h-8 flex items-center justify-center
                          rounded-full text-muted hover:text-primary
                          disabled:opacity-30 disabled:cursor-not-allowed
                          transition-colors"
-              title="צרף תמונה"
+              title="צרף תמונה או PDF"
             >
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a.75.75 0 00-1.06 0l-1.91 1.909-4.97-4.969a.75.75 0 00-1.06 0L2.5 11.06zm12.22-4.81a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clipRule="evenodd" />
               </svg>
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic"
+              accept="image/jpeg,image/png,image/webp,image/heic,.pdf,application/pdf"
               multiple
               onChange={handleFileSelect}
               className="hidden"
