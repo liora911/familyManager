@@ -11,6 +11,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDashboardRefresh } from "@/app/contexts/DashboardRefreshContext";
+import { clientUpload, isAllowedFile } from "@/lib/upload";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -23,10 +24,10 @@ interface Message {
 }
 
 interface PendingFile {
-  data: string;
+  url: string;
   media_type: string;
   name: string;
-  preview: string; // data URL for thumbnail, or empty for PDFs
+  preview: string; // blob URL for thumbnail, or empty for PDFs
   kind: "image" | "pdf";
 }
 
@@ -49,28 +50,6 @@ function loadMessages(): Message[] {
 function saveMessages(msgs: Message[]) {
   const toSave = msgs.slice(-50);
   localStorage.setItem("home-manager-messages", JSON.stringify(toSave));
-}
-
-// ── Image helpers ───────────────────────────────────────────────────
-
-// Vercel serverless has a 4.5MB body limit; base64 adds ~33% overhead
-// So raw file max ≈ 3MB → ~4MB base64 + JSON → under 4.5MB
-const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
-const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, "application/pdf"];
-
-function readFileAsBase64(file: File): Promise<{ data: string; preview: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Strip the data:...;base64, prefix for the API
-      const base64 = result.split(",")[1];
-      resolve({ data: base64, preview: result });
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 // ── Suggestion chips ─────────────────────────────────────────────────
@@ -151,29 +130,32 @@ const ChatPanel = forwardRef<
     if (!files) return;
 
     for (const file of Array.from(files)) {
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) continue;
-      if (file.size > MAX_FILE_SIZE) {
-        alert(`הקובץ "${file.name}" גדול מדי (מקסימום 3MB)`);
-        continue;
-      }
+      if (!isAllowedFile(file)) continue;
       if (pendingFiles.length >= 4) break;
 
       const isPdf = file.type === "application/pdf";
 
       try {
-        const { data, preview } = await readFileAsBase64(file);
+        // Upload to Vercel Blob (bypasses serverless body limit)
+        const result = await clientUpload(file);
+        if (!result.success || !result.url) {
+          alert(result.error || "העלאה נכשלה");
+          continue;
+        }
+
+        const preview = isPdf ? "" : URL.createObjectURL(file);
         setPendingFiles((prev) => [
-          ...prev.slice(0, 3), // max 4 total
+          ...prev.slice(0, 3),
           {
-            data,
+            url: result.url!,
             media_type: file.type,
             name: file.name,
-            preview: isPdf ? "" : preview,
+            preview,
             kind: isPdf ? "pdf" : "image",
           },
         ]);
       } catch {
-        // skip failed reads
+        // skip failed uploads
       }
     }
 
@@ -202,9 +184,9 @@ const ChatPanel = forwardRef<
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
 
-    // Capture files before clearing
+    // Capture file URLs before clearing
     const filesToSend = hasFiles
-      ? pendingFiles.map((f) => ({ data: f.data, media_type: f.media_type, kind: f.kind }))
+      ? pendingFiles.map((f) => ({ url: f.url, media_type: f.media_type, kind: f.kind }))
       : undefined;
     setPendingFiles([]);
     setLoading(true);

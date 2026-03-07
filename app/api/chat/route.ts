@@ -45,28 +45,20 @@ export async function POST(req: Request) {
       }
     }
 
-    // Add current message (with optional images/PDFs)
+    // Add current message (with optional images/PDFs via URL)
     if (Array.isArray(files) && files.length > 0) {
       const contentBlocks: Anthropic.ContentBlockParam[] = [];
       for (const file of files.slice(0, 4)) {
-        if (!file.data) continue;
+        if (!file.url) continue;
         if (file.kind === "pdf" || file.media_type === "application/pdf") {
           contentBlocks.push({
             type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: file.data,
-            },
+            source: { type: "url", url: file.url },
           });
         } else if (file.media_type?.startsWith("image/")) {
           contentBlocks.push({
             type: "image",
-            source: {
-              type: "base64",
-              media_type: file.media_type as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-              data: file.data,
-            },
+            source: { type: "url", url: file.url },
           });
         }
       }
