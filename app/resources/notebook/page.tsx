@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { crudRequest } from "@/app/components/FormModal";
 
 interface NotebookEntry {
@@ -56,7 +58,8 @@ export default function NotebookPage() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
 
-  // Editor state
+  // View / Editor state
+  const [viewing, setViewing] = useState<NotebookEntry | null>(null);
   const [editing, setEditing] = useState<NotebookEntry | null>(null);
   const [editorTitle, setEditorTitle] = useState("");
   const [editorContent, setEditorContent] = useState("");
@@ -84,6 +87,19 @@ export default function NotebookPage() {
     setEditorTitle("");
     setEditorContent("");
     setEditorCategory("general");
+  };
+
+  const openView = (entry: NotebookEntry) => {
+    setViewing(entry);
+  };
+
+  const openEditFromView = () => {
+    if (!viewing) return;
+    setEditing(viewing);
+    setEditorTitle(viewing.title || "");
+    setEditorContent(viewing.content);
+    setEditorCategory(viewing.category);
+    setViewing(null);
   };
 
   const openEdit = (entry: NotebookEntry) => {
@@ -149,6 +165,64 @@ export default function NotebookPage() {
     }
     return true;
   });
+
+  // Full-screen view (rendered markdown)
+  if (viewing) {
+    const catConf = CATEGORY_CONFIG[viewing.category] || CATEGORY_CONFIG.general;
+    return (
+      <div dir="rtl" className="min-h-dvh bg-surface text-primary flex flex-col">
+        <header className="border-b border-border bg-card px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setViewing(null)}
+              className="text-muted hover:text-primary transition-colors text-sm"
+            >
+              ← חזרה
+            </button>
+            <span className="text-xs text-muted bg-tag px-2 py-0.5 rounded-full">
+              {catConf.icon} {catConf.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleDelete(viewing.id, viewing.title || "רשומה").then(() => setViewing(null))}
+              className="text-muted hover:text-red-500 transition-colors text-sm px-3 py-1.5"
+            >
+              🗑️
+            </button>
+            <button
+              onClick={openEditFromView}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+            >
+              ✏️ עריכה
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 overflow-auto p-4 sm:p-6 max-w-4xl mx-auto w-full">
+          {viewing.title && (
+            <h1 className="text-xl font-bold mb-4">{viewing.title}</h1>
+          )}
+          <div className="prose prose-sm prose-invert max-w-none
+            prose-headings:text-primary prose-headings:font-bold
+            prose-p:text-secondary prose-p:leading-relaxed
+            prose-strong:text-primary prose-em:text-secondary
+            prose-li:text-secondary prose-li:marker:text-muted
+            prose-hr:border-border
+            prose-a:text-link prose-a:no-underline hover:prose-a:underline
+            prose-blockquote:border-border prose-blockquote:text-muted
+            prose-code:text-primary prose-code:bg-tag prose-code:px-1 prose-code:rounded
+            prose-pre:bg-card prose-pre:border prose-pre:border-border">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {viewing.content}
+            </ReactMarkdown>
+          </div>
+          <p className="text-[10px] text-muted mt-6">
+            {timeAgo(viewing.updated_at || viewing.created_at)}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Full-screen editor
   if (editing) {
@@ -274,7 +348,7 @@ export default function NotebookPage() {
               return (
                 <div
                   key={entry.id}
-                  onClick={() => openEdit(entry)}
+                  onClick={() => openView(entry)}
                   className={`bg-card rounded-xl border p-4 cursor-pointer transition-colors hover:bg-hover ${
                     entry.is_pinned ? "border-amber-500/40" : "border-border"
                   }`}
