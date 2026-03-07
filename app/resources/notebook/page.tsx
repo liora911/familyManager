@@ -342,51 +342,57 @@ export default function NotebookPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {filtered.map((entry) => {
               const catConf = CATEGORY_CONFIG[entry.category] || CATEGORY_CONFIG.general;
               return (
                 <div
                   key={entry.id}
                   onClick={() => openView(entry)}
-                  className={`bg-card rounded-xl border p-4 cursor-pointer transition-colors hover:bg-hover ${
+                  className={`bg-card rounded-xl border cursor-pointer transition-colors hover:bg-hover flex overflow-hidden ${
                     entry.is_pinned ? "border-amber-500/40" : "border-border"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {entry.is_pinned && <span className="text-amber-500 text-xs">📌</span>}
-                        <p className="font-medium text-sm">
-                          {entry.title || "ללא כותרת"}
+                  {/* Category icon strip — full height right side */}
+                  <div className="flex-shrink-0 w-16 bg-surface/50 border-l border-border flex items-center justify-center">
+                    <span className="text-3xl opacity-70">{catConf.icon}</span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {entry.is_pinned && <span className="text-amber-500 text-xs">📌</span>}
+                          <p className="font-medium text-sm">
+                            {entry.title || "ללא כותרת"}
+                          </p>
+                          <span className="text-[10px] text-muted">{catConf.label}</span>
+                        </div>
+                        <p className="text-xs text-secondary mt-1.5 line-clamp-2 whitespace-pre-wrap">
+                          {stripMarkdown(entry.content)}
                         </p>
-                        <span className="text-xs text-muted bg-tag px-2 py-0.5 rounded-full">
-                          {catConf.icon} {catConf.label}
-                        </span>
+                        <p className="text-[10px] text-muted mt-2">
+                          {timeAgo(entry.updated_at || entry.created_at)}
+                        </p>
                       </div>
-                      <p className="text-xs text-secondary mt-1.5 line-clamp-2 whitespace-pre-wrap">
-                        {stripMarkdown(entry.content)}
-                      </p>
-                      <p className="text-[10px] text-muted mt-2">
-                        {timeAgo(entry.updated_at || entry.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleTogglePin(entry)}
-                        className={`text-xs p-1.5 rounded-lg hover:bg-hover transition-colors ${
-                          entry.is_pinned ? "text-amber-500" : "text-muted hover:text-amber-500"
-                        }`}
-                        title={entry.is_pinned ? "בטל נעיצה" : "נעץ"}
-                      >
-                        📌
-                      </button>
-                      <button
-                        onClick={() => handleDelete(entry.id, entry.title || "רשומה")}
-                        className="text-xs text-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-hover transition-colors"
-                      >
-                        🗑️
-                      </button>
+                      <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleTogglePin(entry)}
+                          className={`text-xs p-1.5 rounded-lg hover:bg-hover transition-colors ${
+                            entry.is_pinned ? "text-amber-500" : "text-muted hover:text-amber-500"
+                          }`}
+                          title={entry.is_pinned ? "בטל נעיצה" : "נעץ"}
+                        >
+                          📌
+                        </button>
+                        <button
+                          onClick={() => handleDelete(entry.id, entry.title || "רשומה")}
+                          className="text-xs text-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-hover transition-colors"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
