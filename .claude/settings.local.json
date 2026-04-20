@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npx next build:*)",
       "Bash(npm install:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(xargs grep -l \"blob\\\\|upload\")",
+      "Bash(npx tsc --noEmit --pretty)",
+      "Bash(git add app/globals.css app/page.tsx)",
+      "Bash(git commit:*)",
+      "Bash(git push)"
     ]
   }
 }

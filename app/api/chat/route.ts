@@ -71,9 +71,9 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: message });
     }
 
-    console.log("[chat] calling Claude, model: claude-sonnet-4-6, messages:", messages.length, "tools:", TOOLS.length);
+    console.log("[chat] calling Claude, model: claude-opus-4-7, messages:", messages.length, "tools:", TOOLS.length);
     let response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: "claude-opus-4-7",
       max_tokens: 4096,
       system: systemPrompt,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: toolResults });
 
       response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
+        model: "claude-opus-4-7",
         max_tokens: 4096,
         system: systemPrompt,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
