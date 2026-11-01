@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { del } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
+import { scheduleReminder } from "@/lib/scheduler";
 
 const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications", "keys", "inventory", "insurance", "finance", "cv", "notebook"] as const;
 type Entity = (typeof VALID_ENTITIES)[number];
@@ -74,6 +75,7 @@ export async function POST(
                   ${body.recurrence_rule || null})
           RETURNING *
         `;
+        await scheduleReminder(row.id, row.remind_at);
         return json({ success: true, item: row });
       }
 
@@ -312,7 +314,17 @@ export async function PUT(
       `UPDATE ${spec.table} SET ${sets.join(", ")} WHERE id = $${values.length} RETURNING *`,
       values
     );
-    return rows[0] ? json({ success: true, item: rows[0] }) : json({ error: "Not found" }, 404);
+    const updated = rows[0];
+    // A reminder with a new time (or reopened) needs a new exact-time booking
+    if (
+      updated &&
+      entity === "reminders" &&
+      updated.status === "pending" &&
+      ("remind_at" in body || "status" in body)
+    ) {
+      await scheduleReminder(updated.id, updated.remind_at);
+    }
+    return updated ? json({ success: true, item: updated }) : json({ error: "Not found" }, 404);
   } catch (error) {
     console.error(`CRUD PUT ${entity}:`, error);
     return json({ error: error instanceof Error ? error.message : "Update failed" }, 500);

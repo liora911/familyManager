@@ -33,7 +33,8 @@ export async function POST(req: Request) {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    }).replace(" ", "T") + "+02:00";
+      hourCycle: "h23",
+    }).replace(" ", "T"); // Israeli wall-clock time; tools add the right offset
     const activeUser = user || "shared";
     const systemPrompt = getSystemPrompt(`${today} (${todayISO})`, activeUser);
 

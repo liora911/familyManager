@@ -189,3 +189,34 @@ CREATE INDEX idx_finance_date ON finance_records(record_date);
 CREATE INDEX idx_finance_category ON finance_records(category);
 CREATE INDEX idx_cv_member ON cv_sections(member_id, section_type);
 CREATE INDEX idx_notebook_pinned ON notebook_entries(is_pinned, created_at DESC);
+
+-- ── Added later (safe to re-run) ────────────────────────────────────
+
+-- Shopping item photos
+ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+-- Web push subscriptions (one row per browser)
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint TEXT NOT NULL UNIQUE,
+  keys_p256dh TEXT NOT NULL,
+  keys_auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Delivery log for outgoing notifications (WhatsApp daily cap counts from here).
+-- Created automatically by the app on first use; listed here for reference.
+CREATE TABLE IF NOT EXISTS notification_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel TEXT NOT NULL,
+  recipient TEXT,
+  status TEXT NOT NULL,
+  detail TEXT,
+  sent_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notification_log_channel_time ON notification_log(channel, sent_at DESC);
+
+-- Which due time already has an exact-time QStash booking.
+-- Created automatically by the app on first use; listed here for reference.
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS scheduled_run_at TIMESTAMPTZ;

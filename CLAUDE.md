@@ -183,10 +183,13 @@ Each tool maps to a server-side function that runs SQL against Neon. Key pattern
 ## Reminder Delivery (Resend)
 
 ### Cron endpoint: `GET /api/cron`
-- Vercel Cron runs every 5 minutes
+- Vercel Cron runs once a day (Hobby plan limit) as a safety net
+- Exact-time delivery: every new or edited reminder books one Upstash QStash message (`lib/scheduler.ts`) that calls this route a few seconds after it is due. QStash free plan allows 7 days ahead, so reminders further out are booked by a later run. Runs claim each reminder atomically, so overlapping runs never double-send.
+- Times: the model writes Israeli wall-clock times without an offset; `lib/time.ts` adds +02:00 or +03:00 for that date
 - Query: `SELECT * FROM reminders WHERE status = 'pending' AND remind_at <= NOW()`
-- For each: send email via Resend to `liora532@gmail.com`
-- Update reminder status to 'sent'
+- For each: send web push, WhatsApp (Meta Cloud API template, when configured), and email via Resend
+- WhatsApp: `lib/whatsapp.ts` sends the approved template to `WHATSAPP_RECIPIENTS`, logs to `notification_log`, stops at `WHATSAPP_DAILY_CAP` per 24h or on a Meta rate-limit error. `GET /api/whatsapp/test` sends a test message.
+- Mark the reminder 'sent' only if at least one channel delivered
 - For recurring reminders: calculate next remind_at based on recurrence_rule, insert new reminder
 
 ### vercel.json
@@ -235,6 +238,10 @@ APP_PIN=...
 RESEND_API_KEY=re_...
 REMINDER_EMAIL=liora532@gmail.com
 CRON_SECRET=... (to secure the cron endpoint)
+VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY=... (web push)
+BLOB_READ_WRITE_TOKEN=... (Vercel Blob uploads)
+WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_RECIPIENTS=... (optional WhatsApp channel; WHATSAPP_TEMPLATE defaults to "reminder", WHATSAPP_DAILY_CAP to 100)
+QSTASH_TOKEN=... (Upstash QStash, exact-time reminders; set QSTASH_URL too if the console shows a regional URL; APP_URL only if VERCEL_PROJECT_PRODUCTION_URL is unavailable)
 ```
 
 ## File Structure

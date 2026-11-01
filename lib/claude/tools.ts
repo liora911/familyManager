@@ -1,7 +1,16 @@
 import { sql } from "@/lib/db";
+import { isWallTime, withIsraelOffset } from "@/lib/time";
+import { scheduleReminder } from "@/lib/scheduler";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function executeTool(name: string, input: Record<string, any>): Promise<any> {
+export async function executeTool(name: string, rawInput: Record<string, any>): Promise<any> {
+  // The model writes Israeli wall-clock times ("2026-04-10T20:00:00");
+  // attach the right offset for that date (+02:00 winter, +03:00 summer).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const input: Record<string, any> = Object.fromEntries(
+    Object.entries(rawInput).map(([k, v]) => [k, isWallTime(v) ? withIsraelOffset(v) : v])
+  );
+
   switch (name) {
     // ── EVENTS ────────────────────────────────────────────────────────
 
@@ -125,6 +134,8 @@ export async function executeTool(name: string, input: Record<string, any>): Pro
                 ${input.is_recurring || false}, ${input.recurrence_rule || null})
         RETURNING *
       `;
+      // Book delivery at the exact time (no-op when the scheduler is not configured)
+      await scheduleReminder(reminder.id, reminder.remind_at);
       return { success: true, reminder };
     }
 
