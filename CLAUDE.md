@@ -7,7 +7,7 @@ A Hebrew RTL Next.js 15 App Router app. Single giant text input + "שגר" butto
 - Next.js 15 App Router (TypeScript)
 - Tailwind CSS
 - Neon Postgres (serverless driver `@neondatabase/serverless`)
-- Anthropic SDK (`@anthropic-ai/sdk`) — model: `claude-sonnet-4-5-20250514`
+- Anthropic SDK (`@anthropic-ai/sdk`) — model: `claude-haiku-5-5`
 - Resend (`resend`) for reminder emails
 - Deploy to Vercel
 

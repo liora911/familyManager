@@ -5,6 +5,7 @@ import { executeTool } from "@/lib/claude/tools";
 export const maxDuration = 60;
 
 const anthropic = new Anthropic();
+const MODEL = "claude-haiku-5-5";
 
 export async function POST(req: Request) {
   try {
@@ -71,10 +72,10 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: message });
     }
 
-    console.log("[chat] calling Claude, model: claude-opus-4-7, messages:", messages.length, "tools:", TOOLS.length);
+    console.log("[chat] calling Claude, model:", MODEL, "messages:", messages.length, "tools:", TOOLS.length);
     let response = await anthropic.messages.create({
-      model: "claude-opus-4-7",
-      max_tokens: 4096,
+      model: MODEL,
+      max_tokens: 8192,
       system: systemPrompt,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tools: TOOLS as any,
@@ -117,12 +118,19 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: toolResults });
 
       response = await anthropic.messages.create({
-        model: "claude-opus-4-7",
-        max_tokens: 4096,
+        model: MODEL,
+        max_tokens: 8192,
         system: systemPrompt,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tools: TOOLS as any,
         messages,
+      });
+    }
+
+    if ((response.stop_reason as string) === "refusal") {
+      return Response.json({
+        response: "לא הצלחתי לטפל בבקשה הזו. נסו לנסח אותה אחרת.",
+        actions: allActions,
       });
     }
 
