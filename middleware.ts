@@ -16,6 +16,10 @@ export function middleware(request: NextRequest) {
   // Check auth cookie
   const authCookie = request.cookies.get("home-manager-auth");
   if (authCookie?.value !== "authenticated") {
+    // API callers get a JSON 401 so the UI can send the user to login
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

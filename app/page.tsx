@@ -15,6 +15,7 @@ function getUser(): string {
 }
 
 const PANEL_STORAGE_KEY = "dashboard-panel-open";
+const INVENTORY_HASH = "#inventory";
 
 const PANEL_WIDTH = 380;
 const PANEL_WIDTH_EXPANDED = 700;
@@ -48,14 +49,24 @@ function Home() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Track hasMessages from chatRef
+  // Inventory lives behind a URL hash, so the phone's back button closes it
+  // instead of leaving the app, and a reload keeps it open.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (chatRef.current) {
-        setHasMessages(chatRef.current.hasMessages);
-      }
-    }, 500);
-    return () => clearInterval(interval);
+    const sync = () => setShowInventory(window.location.hash === INVENTORY_HASH);
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+
+  const openInventory = useCallback(() => {
+    window.location.hash = INVENTORY_HASH.slice(1);
+  }, []);
+
+  const closeInventory = useCallback(() => {
+    if (window.location.hash === INVENTORY_HASH) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    setShowInventory(false);
   }, []);
 
   const handleTogglePanel = useCallback(() => {
@@ -89,6 +100,12 @@ function Home() {
     setHasMessages(false);
   }, []);
 
+  const handleHasMessagesChange = useCallback((has: boolean) => {
+    setHasMessages(has);
+  }, []);
+
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+
   return (
     <div dir="rtl" className="chat-viewport flex flex-col h-dvh bg-surface text-primary">
       <UnifiedHeader
@@ -98,96 +115,105 @@ function Home() {
         hasMessages={hasMessages}
         onTogglePanel={handleTogglePanel}
         onClearChat={handleClearChat}
-        onOpenInventory={() => setShowInventory(true)}
+        onOpenInventory={openInventory}
       />
 
       {showInventory ? (
         <div className="flex-1 overflow-hidden">
-          <InventoryView onClose={() => setShowInventory(false)} />
+          <InventoryView onClose={closeInventory} />
         </div>
       ) : (
         <>
           <div className="flex-1 overflow-hidden flex">
             {/* Chat — always visible, takes remaining space */}
-            <ChatPanel ref={chatRef} className="flex-1 min-w-0" user={user} />
+            <ChatPanel
+              ref={chatRef}
+              className="flex-1 min-w-0"
+              user={user}
+              onHasMessagesChange={handleHasMessagesChange}
+            />
 
             {/* Dashboard panel — desktop only, collapsible with icon sidebar */}
-            <div className="hidden lg:flex flex-shrink-0 h-full">
-              {/* Expand/collapse tongue tab */}
-              {isPanelOpen && (
-                <button
-                  onClick={() => setIsPanelExpanded((p) => !p)}
-                  className="flex-shrink-0 self-start mt-2 w-5 h-9 bg-card
-                             border border-border border-l-0 rounded-r-lg
-                             flex items-center justify-center
-                             text-muted hover:text-primary hover:bg-hover
-                             transition-colors z-10"
-                  style={{ marginLeft: "-1px" }}
-                  title={isPanelExpanded ? "צמצם" : "הרחב"}
-                >
-                  <svg
-                    width="10" height="10" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2.5"
-                    strokeLinecap="round" strokeLinejoin="round"
-                    className={`transition-transform duration-300 ${isPanelExpanded ? "" : "rotate-180"}`}
+            {isDesktop && (
+              <div className="hidden lg:flex flex-shrink-0 h-full">
+                {/* Expand/collapse tongue tab */}
+                {isPanelOpen && (
+                  <button
+                    onClick={() => setIsPanelExpanded((p) => !p)}
+                    className="flex-shrink-0 self-start mt-2 w-5 h-9 bg-card
+                               border border-border border-l-0 rounded-r-lg
+                               flex items-center justify-center
+                               text-muted hover:text-primary hover:bg-hover
+                               transition-colors z-10"
+                    style={{ marginLeft: "-1px" }}
+                    title={isPanelExpanded ? "צמצם" : "הרחב"}
+                    aria-label={isPanelExpanded ? "צמצום הדשבורד" : "הרחבת הדשבורד"}
                   >
-                    <path d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              )}
-
-              {/* Panel body */}
-              <div
-                className="overflow-hidden border-r border-border
-                           transition-[width] duration-300 ease-in-out"
-                style={{
-                  width: isPanelOpen
-                    ? isPanelExpanded
-                      ? PANEL_WIDTH_EXPANDED
-                      : PANEL_WIDTH
-                    : PANEL_WIDTH_COLLAPSED,
-                }}
-              >
-                {isPanelOpen ? (
-                  <div
-                    className="h-full"
-                    style={{
-                      width: isPanelExpanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH,
-                    }}
-                  >
-                    <DashboardPanel requestedTab={requestedTab} />
-                  </div>
-                ) : (
-                  /* Collapsed icon sidebar */
-                  <div
-                    className="h-full flex flex-col items-center py-3 gap-1 bg-card"
-                    style={{ width: PANEL_WIDTH_COLLAPSED }}
-                  >
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab.key}
-                        onClick={() => handleSidebarIconClick(tab.key)}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl
-                                   text-lg text-muted hover:text-primary hover:bg-hover
-                                   transition-colors"
-                        title={tab.label}
-                      >
-                        {tab.icon}
-                      </button>
-                    ))}
-                  </div>
+                    <svg
+                      width="10" height="10" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="2.5"
+                      strokeLinecap="round" strokeLinejoin="round"
+                      className={`transition-transform duration-300 ${isPanelExpanded ? "" : "rotate-180"}`}
+                      aria-hidden="true"
+                    >
+                      <path d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
                 )}
+
+                {/* Panel body */}
+                <div
+                  className="overflow-hidden border-r border-border
+                             transition-[width] duration-300 ease-in-out"
+                  style={{
+                    width: isPanelOpen
+                      ? isPanelExpanded
+                        ? PANEL_WIDTH_EXPANDED
+                        : PANEL_WIDTH
+                      : PANEL_WIDTH_COLLAPSED,
+                  }}
+                >
+                  {isPanelOpen ? (
+                    <div
+                      className="h-full"
+                      style={{
+                        width: isPanelExpanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH,
+                      }}
+                    >
+                      <DashboardPanel requestedTab={requestedTab} />
+                    </div>
+                  ) : (
+                    /* Collapsed icon sidebar */
+                    <div
+                      className="h-full flex flex-col items-center py-3 gap-1 bg-card"
+                      style={{ width: PANEL_WIDTH_COLLAPSED }}
+                    >
+                      {tabs.map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => handleSidebarIconClick(tab.key)}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl
+                                     text-lg text-muted hover:text-primary hover:bg-hover
+                                     transition-colors"
+                          title={tab.label}
+                          aria-label={tab.label}
+                        >
+                          <span aria-hidden="true">{tab.icon}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Mobile bottom-sheet drawer */}
-          <DashboardDrawer
-            isOpen={isDrawerOpen}
-            onClose={() => setIsDrawerOpen(false)}
-          >
-            <DashboardPanel />
-          </DashboardDrawer>
+          {/* Mobile bottom-sheet drawer (only mounted on small screens) */}
+          {!isDesktop && (
+            <DashboardDrawer isOpen={isDrawerOpen} onClose={closeDrawer}>
+              <DashboardPanel />
+            </DashboardDrawer>
+          )}
         </>
       )}
     </div>

@@ -66,17 +66,17 @@ const SUGGESTIONS = [
 
 export interface ChatPanelHandle {
   clearChat: () => void;
-  hasMessages: boolean;
 }
 
 const ChatPanel = forwardRef<
   ChatPanelHandle,
-  { className?: string; user: string }
->(function ChatPanel({ className, user }, ref) {
+  { className?: string; user: string; onHasMessagesChange?: (has: boolean) => void }
+>(function ChatPanel({ className, user, onHasMessagesChange }, ref) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -102,12 +102,13 @@ const ChatPanel = forwardRef<
         messageCountRef.current = 0;
         localStorage.removeItem("home-manager-messages");
       },
-      get hasMessages() {
-        return messages.length > 0;
-      },
     }),
-    [messages]
+    []
   );
+
+  useEffect(() => {
+    onHasMessagesChange?.(messages.length > 0);
+  }, [messages.length, onHasMessagesChange]);
 
   // ── Auto-resize textarea ──────────────────────────────────────────
 
@@ -129,8 +130,16 @@ const ChatPanel = forwardRef<
     const files = e.target.files;
     if (!files) return;
 
+    setUploading(true);
     for (const file of Array.from(files)) {
-      if (!isAllowedFile(file)) continue;
+      if (/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+        alert("תמונות HEIC לא נתמכות בצ׳אט. שלחו JPG או PNG");
+        continue;
+      }
+      if (!isAllowedFile(file)) {
+        alert("סוג קובץ לא נתמך. אפשר לשלוח תמונות או PDF");
+        continue;
+      }
       if (pendingFiles.length >= 4) break;
 
       const isPdf = file.type === "application/pdf";
@@ -159,6 +168,7 @@ const ChatPanel = forwardRef<
       }
     }
 
+    setUploading(false);
     // Reset file input so same file can be re-selected
     e.target.value = "";
   };
@@ -218,6 +228,10 @@ const ChatPanel = forwardRef<
           files: filesToSend,
         }),
       });
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "שגיאה");
@@ -240,7 +254,7 @@ const ChatPanel = forwardRef<
         ...prev,
         {
           role: "assistant",
-          content: "שגיאה - נסי שוב",
+          content: "שגיאה, נסו שוב",
           timestamp: new Date(),
         },
       ]);
@@ -269,7 +283,7 @@ const ChatPanel = forwardRef<
     return index >= messageCountRef.current;
   };
 
-  const canSend = input.trim() || pendingFiles.length > 0;
+  const canSend = (input.trim() || pendingFiles.length > 0) && !uploading;
 
   // ── Render ────────────────────────────────────────────────────────
 
@@ -285,7 +299,7 @@ const ChatPanel = forwardRef<
                 שלום, מה נעשה היום?
               </h2>
               <p className="text-sm text-muted mb-8">
-                כתבי כל בקשה בשפה חופשית
+                אפשר לכתוב כל בקשה בשפה חופשית
               </p>
               <div className="flex flex-wrap justify-center gap-2 max-w-md px-4">
                 {SUGGESTIONS.map((s) => (
@@ -422,7 +436,7 @@ const ChatPanel = forwardRef<
           {pendingFiles.length > 0 && (
             <div className="flex gap-2 mb-2 px-1">
               {pendingFiles.map((file, i) => (
-                <div key={i} className="relative group/img">
+                <div key={i} className="relative group">
                   {file.kind === "pdf" ? (
                     <div className="w-12 h-12 rounded-lg border border-border bg-red-500/10
                                     flex flex-col items-center justify-center">
@@ -441,8 +455,8 @@ const ChatPanel = forwardRef<
                   <button
                     onClick={() => removeFile(i)}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white
-                               flex items-center justify-center text-xs opacity-0 group-hover/img:opacity-100
-                               transition-opacity"
+                               flex items-center justify-center text-xs reveal-on-hover"
+                    aria-label="הסרת קובץ"
                   >
                     <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
@@ -451,6 +465,10 @@ const ChatPanel = forwardRef<
                 </div>
               ))}
             </div>
+          )}
+
+          {uploading && (
+            <p className="text-xs text-muted mb-2 px-1">מעלה קובץ...</p>
           )}
 
           <div
@@ -468,6 +486,7 @@ const ChatPanel = forwardRef<
                          disabled:opacity-30 disabled:cursor-not-allowed
                          transition-colors"
               title="צרף תמונה או PDF"
+              aria-label="צירוף תמונה או PDF"
             >
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clipRule="evenodd" />
@@ -476,7 +495,7 @@ const ChatPanel = forwardRef<
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,.pdf,application/pdf"
+              accept="image/jpeg,image/png,image/webp,.pdf,application/pdf"
               multiple
               onChange={handleFileSelect}
               className="hidden"
@@ -487,7 +506,7 @@ const ChatPanel = forwardRef<
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="כתבי כל בקשה..."
+              placeholder="כתבו כל בקשה..."
               rows={1}
               className="flex-1 bg-transparent text-primary placeholder-muted
                          resize-none text-sm leading-6

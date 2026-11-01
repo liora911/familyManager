@@ -42,10 +42,10 @@ export async function GET(req: NextRequest) {
       // Per-month aggregates
       sql(
         `SELECT
-           COALESCE(SUM(CASE WHEN category = 'income' THEN amount::numeric ELSE 0 END), 0) as total_income,
-           COALESCE(SUM(CASE WHEN category = 'expense' THEN amount::numeric ELSE 0 END), 0) as total_expense,
-           COALESCE(SUM(CASE WHEN category = 'investment' THEN amount::numeric ELSE 0 END), 0) as total_investment,
-           COALESCE(SUM(CASE WHEN category = 'savings' THEN amount::numeric ELSE 0 END), 0) as total_savings,
+           COALESCE(SUM(CASE WHEN category = 'income' AND btrim(amount) ~ '^-?[0-9]+([.][0-9]+)?$' THEN btrim(amount)::numeric ELSE 0 END), 0) as total_income,
+           COALESCE(SUM(CASE WHEN category = 'expense' AND btrim(amount) ~ '^-?[0-9]+([.][0-9]+)?$' THEN btrim(amount)::numeric ELSE 0 END), 0) as total_expense,
+           COALESCE(SUM(CASE WHEN category = 'investment' AND btrim(amount) ~ '^-?[0-9]+([.][0-9]+)?$' THEN btrim(amount)::numeric ELSE 0 END), 0) as total_investment,
+           COALESCE(SUM(CASE WHEN category = 'savings' AND btrim(amount) ~ '^-?[0-9]+([.][0-9]+)?$' THEN btrim(amount)::numeric ELSE 0 END), 0) as total_savings,
            COUNT(*) as record_count
          FROM finance_records
          WHERE record_date >= $1::date AND record_date < $2::date`,

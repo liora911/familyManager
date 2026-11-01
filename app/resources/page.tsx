@@ -18,6 +18,7 @@ interface FinanceRecord {
   id: string;
   category: string;
   amount?: string;
+  record_date?: string;
   is_recurring?: boolean;
 }
 
@@ -153,8 +154,12 @@ function InsuranceRow({ data }: { data: InsurancePolicy[] }) {
 
 function FinanceRow({ data }: { data: FinanceRecord[] }) {
   const total = data.length;
-  const income = data.filter((r) => r.category === "income").reduce((s, r) => s + (parseFloat(r.amount || "0") || 0), 0);
-  const expense = data.filter((r) => r.category === "expense").reduce((s, r) => s + (parseFloat(r.amount || "0") || 0), 0);
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthly = data.filter((r) => (r.record_date || "").startsWith(thisMonth));
+  const toNumber = (v?: string) => parseFloat((v || "0").replace(/[^\d.-]/g, "")) || 0;
+  const income = monthly.filter((r) => r.category === "income").reduce((s, r) => s + toNumber(r.amount), 0);
+  const expense = monthly.filter((r) => r.category === "expense").reduce((s, r) => s + toNumber(r.amount), 0);
   const recurring = data.filter((r) => r.is_recurring).length;
   const balance = income - expense;
 
@@ -174,13 +179,15 @@ function FinanceRow({ data }: { data: FinanceRecord[] }) {
               <h2 className="text-lg sm:text-xl font-semibold text-primary">כספים</h2>
               <ChevronLeftIcon className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-base text-secondary mt-0.5">הכנסות, הוצאות, השקעות, חסכונות</p>
+            <p className="text-base text-secondary mt-0.5">הכנסות והוצאות של החודש הנוכחי</p>
 
             {total > 0 && (
               <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
-                {income > 0 && <Stat label="הכנסות" value={`₪${income.toLocaleString()}`} />}
-                {expense > 0 && <Stat label="הוצאות" value={`₪${expense.toLocaleString()}`} />}
-                <Stat label="מאזן" value={`${balance >= 0 ? "+" : ""}₪${balance.toLocaleString()}`} warn={balance < 0} />
+                {income > 0 && <Stat label="הכנסות החודש" value={`₪${income.toLocaleString()}`} />}
+                {expense > 0 && <Stat label="הוצאות החודש" value={`₪${expense.toLocaleString()}`} />}
+                {monthly.length > 0 && (
+                  <Stat label="מאזן החודש" value={`${balance >= 0 ? "+" : ""}₪${balance.toLocaleString()}`} warn={balance < 0} />
+                )}
                 {recurring > 0 && <Stat label="חוזרים" value={recurring} />}
               </div>
             )}

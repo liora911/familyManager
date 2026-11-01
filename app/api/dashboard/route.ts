@@ -23,85 +23,65 @@ export async function GET(req: NextRequest) {
       memberId = m?.id || null;
     }
 
-    // For "shared" or if member not found, show everything (no filter)
-    // For specific user, show their items + unassigned items
-    let events, tasks, medications;
+    // Personal profiles see their own items plus items not assigned to anyone.
+    // The shared profile (or an unknown member) sees everything.
+    const memberFilter = (column: string) =>
+      memberId ? ` AND (${column} = $1 OR ${column} IS NULL)` : "";
+    const memberParams = memberId ? [memberId] : [];
 
-    if (memberId) {
-      [events, tasks] = await Promise.all([
-        sql(
-          `SELECT e.*, fm.name as member_name, c.name as contact_name, c.phone as contact_phone
-           FROM events e
-           LEFT JOIN family_members fm ON e.related_member_id = fm.id
-           LEFT JOIN contacts c ON e.contact_id = c.id
-           WHERE e.event_date >= NOW() - INTERVAL '7 days'
-             AND e.related_member_id = $1
-           ORDER BY e.event_date ASC
-           LIMIT 50`,
-          [memberId]
-        ),
-        sql(
-          `SELECT t.*, fm.name as assigned_name
-           FROM tasks t
-           LEFT JOIN family_members fm ON t.assigned_to = fm.id
-           WHERE t.status != 'done'
-             AND t.assigned_to = $1
-           ORDER BY
-             CASE t.priority
-               WHEN 'urgent' THEN 0 WHEN 'high' THEN 1
-               WHEN 'medium' THEN 2 WHEN 'low' THEN 3
-             END,
-             t.due_date ASC NULLS LAST`,
-          [memberId]
-        ),
-      ]);
-      medications = await sql(
+    const [
+      events,
+      tasks,
+      medications,
+      shopping,
+      reminders,
+      keys,
+      inventory,
+      insurance,
+      finance,
+      cvSections,
+      notebook,
+    ] = await Promise.all([
+      // Events: a few months back so the calendar can browse, everything ahead
+      sql(
+        `SELECT e.*, fm.name as member_name, c.name as contact_name, c.phone as contact_phone
+         FROM events e
+         LEFT JOIN family_members fm ON e.related_member_id = fm.id
+         LEFT JOIN contacts c ON e.contact_id = c.id
+         WHERE e.event_date >= NOW() - INTERVAL '90 days'${memberFilter("e.related_member_id")}
+         ORDER BY e.event_date ASC
+         LIMIT 500`,
+        memberParams
+      ),
+      sql(
+        `SELECT t.*, fm.name as assigned_name
+         FROM tasks t
+         LEFT JOIN family_members fm ON t.assigned_to = fm.id
+         WHERE t.status != 'done'${memberFilter("t.assigned_to")}
+         ORDER BY
+           CASE t.priority
+             WHEN 'urgent' THEN 0 WHEN 'high' THEN 1
+             WHEN 'medium' THEN 2 WHEN 'low' THEN 3
+           END,
+           t.due_date ASC NULLS LAST`,
+        memberParams
+      ),
+      sql(
         `SELECT m.*, fm.name as member_name
          FROM medications m
          LEFT JOIN family_members fm ON m.for_member_id = fm.id
-         WHERE m.for_member_id = $1
+         WHERE 1=1${memberFilter("m.for_member_id")}
          ORDER BY m.created_at DESC`,
-        [memberId]
-      );
-    } else {
-      [events, tasks, medications] = await Promise.all([
-        sql`SELECT e.*, fm.name as member_name, c.name as contact_name, c.phone as contact_phone
-            FROM events e
-            LEFT JOIN family_members fm ON e.related_member_id = fm.id
-            LEFT JOIN contacts c ON e.contact_id = c.id
-            WHERE e.event_date >= NOW() - INTERVAL '7 days'
-            ORDER BY e.event_date ASC
-            LIMIT 50`,
-        sql`SELECT t.*, fm.name as assigned_name
-            FROM tasks t
-            LEFT JOIN family_members fm ON t.assigned_to = fm.id
-            WHERE t.status != 'done'
-            ORDER BY
-              CASE t.priority
-                WHEN 'urgent' THEN 0 WHEN 'high' THEN 1
-                WHEN 'medium' THEN 2 WHEN 'low' THEN 3
-              END,
-              t.due_date ASC NULLS LAST`,
-        sql`SELECT m.*, fm.name as member_name
-            FROM medications m
-            LEFT JOIN family_members fm ON m.for_member_id = fm.id
-            ORDER BY m.created_at DESC`,
-      ]);
-    }
-
-    // Shopping and reminders are always shared (no member assignment)
-    const [shopping, reminders] = await Promise.all([
+        memberParams
+      ),
+      // Shopping includes purchased items so they can be unchecked or cleared
       sql`SELECT * FROM shopping_items
-          WHERE is_purchased = false
-          ORDER BY category, created_at DESC`,
+          ORDER BY is_purchased, category, created_at DESC`,
       sql`SELECT r.*, e.title as event_title
           FROM reminders r
           LEFT JOIN events e ON r.event_id = e.id
           WHERE r.status = 'pending'
           ORDER BY r.remind_at ASC`,
-    ]);
-
-    const [keys, inventory, insurance, finance, cvSections, notebook] = await Promise.all([
       sql`SELECT * FROM keys ORDER BY category, name`,
       sql`SELECT * FROM inventory ORDER BY category, name`,
       sql`SELECT ip.*, fm.name as member_name
@@ -121,7 +101,19 @@ export async function GET(req: NextRequest) {
           ORDER BY is_pinned DESC, created_at DESC`,
     ]);
 
-    return NextResponse.json({ events, tasks, shopping, reminders, medications, keys, inventory, insurance, finance, cv: cvSections, notebook });
+    return NextResponse.json({
+      events,
+      tasks,
+      shopping,
+      reminders,
+      medications,
+      keys,
+      inventory,
+      insurance,
+      finance,
+      cv: cvSections,
+      notebook,
+    });
   } catch (err) {
     console.error("Dashboard error:", err);
     return NextResponse.json({ error: "Failed to load dashboard" }, { status: 500 });

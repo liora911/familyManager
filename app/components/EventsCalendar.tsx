@@ -143,9 +143,12 @@ export default function EventsCalendar({
 
   // Popover
   const handleDayClick = (day: DayInfo, cell: HTMLElement) => {
+    setAddMenu(null);
     if (day.events.length === 0) {
       setSelectedDay(null);
       setPopoverPos(null);
+      // Tapping an empty day offers to add something there (works without hover)
+      if (onAdd) showAddMenu(day.date, cell);
       return;
     }
     if (selectedDay && isSameDay(selectedDay.date, day.date)) {
@@ -208,7 +211,7 @@ export default function EventsCalendar({
       disabled={!day}
       onClick={(e) => day && handleDayClick(day, e.currentTarget)}
       className={`
-        group/cell relative aspect-square flex flex-col items-center justify-center rounded-lg transition-all text-sm
+        group relative aspect-square flex flex-col items-center justify-center rounded-lg transition-all text-sm
         ${!day ? "cursor-default" : "cursor-pointer"}
         ${day && isSameDay(day.date, now) ? "bg-badge-blue-bg ring-2 ring-blue-500" : ""}
         ${day && !isSameDay(day.date, now) ? "hover:bg-hover" : ""}
@@ -234,7 +237,9 @@ export default function EventsCalendar({
           {onAdd && (
             <span
               onClick={(e) => { e.stopPropagation(); showAddMenu(day.date, e.currentTarget as HTMLElement); }}
-              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] leading-none flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity cursor-pointer"
+              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              role="button"
+              aria-label="הוספה ביום זה"
             >
               +
             </span>

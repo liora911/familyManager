@@ -4,59 +4,38 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
+const THEME_COLORS: Record<Theme, string> = {
+  dark: "#09090b",
+  light: "#f9fafb",
+};
+
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
   theme: "dark",
   toggle: () => {},
 });
 
-async function subscribeToPush(reg: ServiceWorkerRegistration) {
-  try {
-    // Check if already subscribed
-    const existing = await reg.pushManager.getSubscription();
-    if (existing) return;
-
-    // Get VAPID public key from server
-    const res = await fetch("/api/push");
-    const { publicKey } = await res.json();
-    if (!publicKey) return;
-
-    // Convert VAPID key to Uint8Array
-    const raw = atob(publicKey.replace(/-/g, "+").replace(/_/g, "/"));
-    const key = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i);
-
-    // Subscribe
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: key,
-    });
-
-    // Send subscription to server
-    await fetch("/api/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription: sub.toJSON() }),
-    });
-  } catch {
-    // Push not supported or permission denied — fail silently
-  }
+function applyTheme(t: Theme) {
+  document.documentElement.classList.toggle("dark", t === "dark");
+  // Keep the browser chrome / PWA status bar in step with the theme
+  document
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((m) => m.setAttribute("content", THEME_COLORS[t]));
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme") as Theme | null;
-    const initial = saved || "dark";
+    const saved = localStorage.getItem("theme");
+    const initial: Theme = saved === "light" ? "light" : "dark";
     setTheme(initial);
     applyTheme(initial);
 
-    // Register service worker + push notifications
+    // Register the service worker (offline shell + push).
+    // Push subscription itself happens from the bell button in the header,
+    // because browsers only allow the permission prompt after a tap.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").then((reg) => {
-        // Subscribe to push notifications after SW is ready
-        subscribeToPush(reg);
-      });
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
     // PWA standalone tweaks
@@ -73,17 +52,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const applyTheme = (t: Theme) => {
-    const root = document.documentElement;
-    if (t === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  };
-
   const toggle = () => {
-    const next = theme === "dark" ? "light" : "dark";
+    const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
     applyTheme(next);
     localStorage.setItem("theme", next);

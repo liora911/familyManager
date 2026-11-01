@@ -14,6 +14,7 @@ export default function DashboardDrawer({
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const currentY = useRef(0);
+  const dragging = useRef(false);
 
   // Close on Escape
   useEffect(() => {
@@ -37,30 +38,33 @@ export default function DashboardDrawer({
     };
   }, [isOpen]);
 
-  // Swipe-down to close
+  // Swipe-down to close. Only the handle bar is draggable, so scrolling
+  // the list inside the sheet can never close it by accident.
   const handleTouchStart = (e: React.TouchEvent) => {
     startY.current = e.touches[0].clientY;
     currentY.current = 0;
+    dragging.current = true;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragging.current) return;
     const delta = e.touches[0].clientY - startY.current;
     currentY.current = delta;
     const sheet = sheetRef.current;
-    if (sheet && delta > 0 && sheet.scrollTop <= 0) {
+    if (sheet && delta > 0) {
       sheet.style.transform = `translateY(${delta}px)`;
       sheet.style.transition = "none";
     }
   };
 
   const handleTouchEnd = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
     const sheet = sheetRef.current;
     if (!sheet) return;
     sheet.style.transition = "";
-    if (currentY.current > 100) {
-      onClose();
-    }
     sheet.style.transform = "";
+    if (currentY.current > 100) onClose();
     currentY.current = 0;
   };
 
@@ -72,22 +76,30 @@ export default function DashboardDrawer({
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Bottom sheet — slides up from bottom, full width */}
       <div
         ref={sheetRef}
         dir="rtl"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        role="dialog"
+        aria-modal="true"
+        aria-label="דשבורד ניהול"
+        aria-hidden={!isOpen}
         className={`fixed inset-x-0 bottom-0 z-50 bg-surface rounded-t-2xl flex flex-col
                     transition-transform duration-300 ease-in-out lg:hidden
                     ${isOpen ? "translate-y-0" : "translate-y-full"}`}
         style={{ height: "92dvh", maxHeight: "92dvh" }}
       >
         {/* Drag handle + close */}
-        <div className="flex-shrink-0 pt-2 pb-1 px-4">
+        <div
+          className="flex-shrink-0 pt-2 pb-1 px-4 touch-none select-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+        >
           <div className="w-10 h-1 bg-divider rounded-full mx-auto mb-2" />
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-secondary">דשבורד ניהול</h2>
@@ -101,8 +113,8 @@ export default function DashboardDrawer({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        {/* Content: the panel inside owns the scrolling */}
+        <div className="flex-1 min-h-0 overflow-hidden">
           {children}
         </div>
       </div>

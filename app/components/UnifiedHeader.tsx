@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import HouseIcon from "@/app/components/HouseIcon";
 import { useTheme } from "@/app/components/ThemeProvider";
+import {
+  getPushStatus,
+  enablePush,
+  disablePush,
+  needsHomeScreenInstall,
+  type PushStatus,
+} from "@/lib/push";
 
 const USER_LABELS: Record<string, string> = {
   yarin: "ירין",
@@ -15,7 +22,7 @@ const USER_LABELS: Record<string, string> = {
 
 function SunIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 5.404a.75.75 0 10-1.06-1.06l-1.061 1.06a.75.75 0 001.06 1.061l1.06-1.06zM6.464 14.596a.75.75 0 10-1.06-1.06l-1.06 1.06a.75.75 0 001.06 1.06l1.06-1.06zM18 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0118 10zM5 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 015 10zM14.596 13.535a.75.75 0 011.061 1.061l-1.06 1.06a.75.75 0 01-1.061-1.06l1.06-1.06zM5.404 4.343a.75.75 0 011.06 1.061l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06z" />
     </svg>
   );
@@ -23,15 +30,23 @@ function SunIcon({ className }: { className?: string }) {
 
 function MoonIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M7.455 2.004a.75.75 0 01.26.77 7 7 0 009.958 7.967.75.75 0 011.067.853A8.5 8.5 0 116.647 1.921a.75.75 0 01.808.083z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function BellIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M10 2a6 6 0 00-6 6c0 1.887-.454 3.665-1.257 5.234a.75.75 0 00.515 1.076 32.91 32.91 0 003.256.508 3.5 3.5 0 006.972 0 32.903 32.903 0 003.256-.508.75.75 0 00.515-1.076A11.448 11.448 0 0116 8a6 6 0 00-6-6zM8.05 14.943a33.54 33.54 0 003.9 0 2 2 0 01-3.9 0z" clipRule="evenodd" />
     </svg>
   );
 }
 
 function InventoryIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7zM15 16V9.414l-5-5-5 5V16h4v-3a1 1 0 012 0v3h4z" clipRule="evenodd" />
     </svg>
   );
@@ -39,7 +54,7 @@ function InventoryIcon({ className }: { className?: string }) {
 
 function FolderIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M3.75 3A1.75 1.75 0 002 4.75v3.26a3.235 3.235 0 011.75-.51h12.5c.644 0 1.245.188 1.75.51V6.75A1.75 1.75 0 0016.25 5h-4.836a.25.25 0 01-.177-.073L9.823 3.513A1.75 1.75 0 008.586 3H3.75zM3.75 9A1.75 1.75 0 002 10.75v4.5c0 .966.784 1.75 1.75 1.75h12.5A1.75 1.75 0 0018 15.25v-4.5A1.75 1.75 0 0016.25 9H3.75z" />
     </svg>
   );
@@ -47,7 +62,7 @@ function FolderIcon({ className }: { className?: string }) {
 
 function ClipboardIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M15.988 3.012A2.25 2.25 0 0118 5.25v6.5A2.25 2.25 0 0115.75 14H13.5v-3.379a3 3 0 00-.879-2.121l-3.12-3.121a3 3 0 00-1.402-.791 2.252 2.252 0 011.913-1.576A2.25 2.25 0 0112.25 1h1.5a2.25 2.25 0 012.238 2.012zM11.5 3.25a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v.25a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-.25z" clipRule="evenodd" />
       <path d="M3.5 6A1.5 1.5 0 002 7.5v9A1.5 1.5 0 003.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L8.44 6.439A1.5 1.5 0 007.378 6H3.5z" />
     </svg>
@@ -56,7 +71,7 @@ function ClipboardIcon({ className }: { className?: string }) {
 
 function UserIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
     </svg>
   );
@@ -64,9 +79,17 @@ function UserIcon({ className }: { className?: string }) {
 
 function LogoutIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd" />
       <path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
     </svg>
   );
 }
@@ -92,7 +115,13 @@ export default function UnifiedHeader({
 }) {
   const { theme, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [push, setPush] = useState<PushStatus | "loading">("loading");
+  const [pushBusy, setPushBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getPushStatus().then(setPush).catch(() => setPush("unsupported"));
+  }, []);
 
   // Close menu on outside click
   useEffect(() => {
@@ -117,10 +146,38 @@ export default function UnifiedHeader({
     window.location.href = "/select";
   };
 
+  const handlePushToggle = async () => {
+    if (pushBusy || push === "loading") return;
+    if (push === "unsupported") {
+      alert(
+        needsHomeScreenInstall()
+          ? "כדי לקבל התראות באייפון צריך להוסיף את האפליקציה למסך הבית (שיתוף ← הוספה למסך הבית) ולפתוח אותה משם."
+          : "הדפדפן הזה לא תומך בהתראות."
+      );
+      return;
+    }
+    if (push === "denied") {
+      alert("ההתראות חסומות בהגדרות הדפדפן לאתר הזה. אפשר לאפשר אותן שם ולנסות שוב.");
+      return;
+    }
+    setPushBusy(true);
+    try {
+      setPush(push === "subscribed" ? await disablePush() : await enablePush());
+    } catch {
+      alert("לא הצלחנו להפעיל התראות. נסו שוב מאוחר יותר.");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const pushOn = push === "subscribed";
+  const pushLabel = pushOn ? "התראות פעילות" : "הפעלת התראות";
+  const themeLabel = theme === "dark" ? "מצב בהיר" : "מצב כהה";
+
   return (
     <header className="flex-shrink-0 border-b border-border bg-card px-3 sm:px-6 py-3">
       <div className="flex items-center justify-between gap-2">
-        {/* Left: Logo + title */}
+        {/* Logo + title */}
         <div className="flex items-center gap-2 min-w-0">
           <HouseIcon size={24} className="text-link flex-shrink-0" />
           <div className="min-w-0">
@@ -135,24 +192,37 @@ export default function UnifiedHeader({
           </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
-          {/* ── Desktop-only full buttons ── */}
+        {/* Actions */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* ── Desktop ── */}
           <button
             onClick={toggle}
-            className="hidden sm:flex items-center justify-center text-muted hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-hover"
-            title={theme === "dark" ? "מצב בהיר" : "מצב כהה"}
+            className="hidden sm:flex items-center justify-center text-muted hover:text-primary transition-colors p-2 rounded-lg hover:bg-hover"
+            title={themeLabel}
+            aria-label={themeLabel}
           >
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
           </button>
+          {push !== "loading" && (
+            <button
+              onClick={handlePushToggle}
+              disabled={pushBusy}
+              className={`hidden sm:flex items-center justify-center transition-colors p-2 rounded-lg hover:bg-hover disabled:opacity-50 ${
+                pushOn ? "text-link" : "text-muted hover:text-primary"
+              }`}
+              title={pushLabel}
+              aria-label={pushLabel}
+              aria-pressed={pushOn}
+            >
+              <BellIcon />
+            </button>
+          )}
           {hasMessages && (
             <button
               onClick={onClearChat}
-              className="hidden sm:flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-hover"
+              className="hidden sm:flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors px-2 py-1.5 rounded-lg hover:bg-hover"
             >
-              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-              </svg>
+              <PlusIcon className="w-4 h-4" />
               שיחה חדשה
             </button>
           )}
@@ -171,6 +241,7 @@ export default function UnifiedHeader({
                   ? "text-link bg-badge-blue-bg"
                   : "text-muted hover:text-primary"
               }`}
+              aria-pressed={!!isInventoryOpen}
             >
               <InventoryIcon />
               מלאי הבית
@@ -190,51 +261,57 @@ export default function UnifiedHeader({
                 ? "text-link bg-badge-blue-bg"
                 : "text-muted hover:text-primary"
             }`}
+            aria-pressed={isPanelOpen}
           >
             <ClipboardIcon />
             דשבורד ניהול
           </button>
           <button
             onClick={handleLogout}
-            className="hidden sm:flex items-center justify-center text-muted hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-hover"
+            className="hidden sm:flex items-center justify-center text-muted hover:text-primary transition-colors p-2 rounded-lg hover:bg-hover"
             title="יציאה"
+            aria-label="יציאה"
           >
             <LogoutIcon />
           </button>
 
-          {/* ── Mobile: primary actions + overflow menu ── */}
-
-          {/* Dashboard toggle — always visible on mobile */}
+          {/* ── Mobile: dashboard toggle + overflow menu ── */}
           <button
             onClick={onTogglePanel}
-            className={`sm:hidden p-2 rounded-full transition-colors ${
+            className={`sm:hidden p-2.5 rounded-full transition-colors ${
               isPanelOpen
                 ? "text-link bg-badge-blue-bg"
                 : "text-muted hover:text-primary"
             }`}
+            aria-label="דשבורד ניהול"
+            aria-pressed={isPanelOpen}
           >
             <ClipboardIcon className="w-5 h-5" />
           </button>
 
-          {/* "..." overflow menu for mobile */}
           <div className="relative sm:hidden" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((p) => !p)}
-              className="text-lg p-2 rounded-full text-muted hover:text-primary transition-colors"
+              className="p-2.5 rounded-full text-muted hover:text-primary transition-colors"
+              aria-label="תפריט"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M3 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM15.5 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
               </svg>
             </button>
             {menuOpen && (
               <div
-                className="absolute left-0 top-full mt-1 w-48 bg-card border border-border rounded-xl
+                role="menu"
+                className="absolute left-0 top-full mt-1 w-56 bg-card border border-border rounded-xl
                            shadow-lg z-50 py-1 overflow-hidden"
               >
                 {onOpenInventory && (
                   <button
+                    role="menuitem"
                     onClick={() => { setMenuOpen(false); onOpenInventory(); }}
-                    className={`w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm transition-colors ${
+                    className={`w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm transition-colors ${
                       isInventoryOpen ? "text-link bg-badge-blue-bg" : "text-primary hover:bg-hover"
                     }`}
                   >
@@ -243,45 +320,59 @@ export default function UnifiedHeader({
                   </button>
                 )}
                 <Link
+                  role="menuitem"
                   href="/resources"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2.5 w-full text-right px-4 py-2.5 text-sm text-primary hover:bg-hover transition-colors"
+                  className="flex items-center gap-2.5 w-full text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
                 >
                   <FolderIcon className="w-4 h-4 text-muted flex-shrink-0" />
                   משאבים
                 </Link>
+                {push !== "loading" && (
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); handlePushToggle(); }}
+                    className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
+                  >
+                    <BellIcon className={`w-4 h-4 flex-shrink-0 ${pushOn ? "text-link" : "text-muted"}`} />
+                    {pushLabel}
+                    {pushOn && <span className="mr-auto text-xs text-link">✓</span>}
+                  </button>
+                )}
                 <button
+                  role="menuitem"
                   onClick={() => { setMenuOpen(false); toggle(); }}
-                  className="w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm text-primary hover:bg-hover transition-colors"
+                  className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
                 >
                   {theme === "dark"
                     ? <SunIcon className="w-4 h-4 text-muted flex-shrink-0" />
                     : <MoonIcon className="w-4 h-4 text-muted flex-shrink-0" />
                   }
-                  {theme === "dark" ? "מצב בהיר" : "מצב כהה"}
+                  {themeLabel}
                 </button>
                 {hasMessages && (
                   <button
+                    role="menuitem"
                     onClick={() => { setMenuOpen(false); onClearChat(); }}
-                    className="w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm text-primary hover:bg-hover transition-colors"
+                    className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
                   >
-                    <svg className="w-4 h-4 text-muted flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                    </svg>
+                    <PlusIcon className="w-4 h-4 text-muted flex-shrink-0" />
                     שיחה חדשה
                   </button>
                 )}
                 <button
+                  role="menuitem"
                   onClick={() => { setMenuOpen(false); handleSwitchUser(); }}
-                  className="w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm text-primary hover:bg-hover transition-colors"
+                  className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
                 >
                   <UserIcon className="w-4 h-4 text-muted flex-shrink-0" />
                   החלף פרופיל
                 </button>
                 <div className="border-t border-border" />
                 <button
+                  role="menuitem"
                   onClick={() => { setMenuOpen(false); handleLogout(); }}
-                  className="w-full flex items-center gap-2.5 text-right px-4 py-2.5 text-sm text-red-500 hover:bg-hover transition-colors"
+                  className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-red-500 hover:bg-hover transition-colors"
                 >
                   <LogoutIcon className="w-4 h-4 flex-shrink-0" />
                   יציאה

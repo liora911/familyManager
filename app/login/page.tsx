@@ -28,11 +28,11 @@ export default function LoginPage() {
         router.push("/select");
         router.refresh();
       } else {
-        setError("קוד שגוי, נסי שוב");
+        setError("קוד שגוי, נסו שוב");
         setPin("");
       }
     } catch {
-      setError("שגיאה, נסי שוב");
+      setError("שגיאה, נסו שוב");
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           <HouseIcon size={64} className="text-link mx-auto" />
           <h1 className="text-xl font-medium text-primary">מנהל הבית</h1>
-          <p className="text-sm text-secondary">הזיני קוד גישה</p>
+          <p className="text-sm text-secondary">הקלידו את קוד הגישה</p>
         </div>
 
         <input
@@ -53,6 +53,8 @@ export default function LoginPage() {
           onChange={(e) => setPin(e.target.value)}
           placeholder="קוד גישה"
           autoFocus
+          autoComplete="current-password"
+          aria-label="קוד גישה"
           className="w-full bg-card border border-border rounded-xl px-4 py-3
                      text-primary placeholder-muted text-center text-lg tracking-widest
                      focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"

@@ -167,6 +167,93 @@ export async function POST(
 }
 
 // ── PUT: Update ─────────────────────────────────────────────────────
+//
+// Only the keys present in the request body are updated. An empty string
+// clears a nullable column (so a due date, location or assignee can be
+// removed from the edit form); required columns keep their current value.
+
+interface UpdateSpec {
+  table: string;
+  /** Body keys that map 1:1 to column names */
+  columns: string[];
+  /** Columns that must not be cleared; an empty value leaves them unchanged */
+  notNull: string[];
+  /** Columns stored as JSONB (value is serialized before saving) */
+  json?: string[];
+  /** Family member name in the body → UUID column */
+  member?: { key: string; column: string };
+  /** Timestamp column to bump on every update */
+  touch?: string;
+}
+
+const UPDATE_SPECS: Record<Entity, UpdateSpec> = {
+  events: {
+    table: "events",
+    columns: ["title", "description", "category", "event_date", "end_date", "location", "status"],
+    notNull: ["title", "category", "event_date", "status"],
+    member: { key: "member_name", column: "related_member_id" },
+  },
+  tasks: {
+    table: "tasks",
+    columns: ["title", "description", "category", "due_date", "priority", "status"],
+    notNull: ["title", "category", "priority", "status"],
+    member: { key: "assigned_to_name", column: "assigned_to" },
+  },
+  shopping: {
+    table: "shopping_items",
+    columns: ["item_name", "quantity", "category", "store", "is_purchased", "list_name", "image_url"],
+    notNull: ["item_name", "category", "is_purchased", "list_name"],
+  },
+  reminders: {
+    table: "reminders",
+    columns: ["message", "remind_at", "is_recurring", "recurrence_rule", "status"],
+    notNull: ["message", "remind_at", "is_recurring", "status"],
+  },
+  medications: {
+    table: "medications",
+    columns: ["name", "dosage", "frequency", "start_date", "end_date", "notes"],
+    notNull: ["name"],
+    member: { key: "for_member_name", column: "for_member_id" },
+  },
+  keys: {
+    table: "keys",
+    columns: ["name", "value", "category", "location", "notes"],
+    notNull: ["name", "value", "category"],
+  },
+  inventory: {
+    table: "inventory",
+    columns: ["name", "category", "sub_category", "brand", "model", "serial_number", "location", "purchase_date", "warranty_expiry", "cost", "notes", "specs", "attachments"],
+    notNull: ["name", "category", "specs", "attachments"],
+    json: ["specs", "attachments"],
+  },
+  insurance: {
+    table: "insurance_policies",
+    columns: ["title", "category", "provider", "policy_number", "start_date", "end_date", "monthly_cost", "contact_phone", "contact_name", "notes", "attachments"],
+    notNull: ["title", "category", "attachments"],
+    json: ["attachments"],
+    member: { key: "insured_member_name", column: "insured_member_id" },
+  },
+  finance: {
+    table: "finance_records",
+    columns: ["title", "category", "amount", "currency", "record_date", "is_recurring", "recurrence_rule", "notes", "attachments"],
+    notNull: ["title", "category", "amount", "currency", "is_recurring", "attachments"],
+    json: ["attachments"],
+    member: { key: "related_member_name", column: "related_member_id" },
+  },
+  cv: {
+    table: "cv_sections",
+    columns: ["section_type", "title", "organization", "start_date", "end_date", "is_current", "description", "sort_order"],
+    notNull: ["section_type", "title", "is_current"],
+    member: { key: "member_name", column: "member_id" },
+  },
+  notebook: {
+    table: "notebook_entries",
+    columns: ["title", "content", "category", "is_pinned"],
+    notNull: ["content", "category", "is_pinned"],
+    touch: "updated_at",
+  },
+};
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ entity: string }> }
@@ -178,214 +265,54 @@ export async function PUT(
 
   try {
     const body = await req.json();
-    const { id, ...fields } = body;
-
+    const { id } = body;
     if (!id) return json({ error: "Missing id" }, 400);
 
-    switch (entity as Entity) {
-      case "events": {
-        const memberId = fields.member_name ? await resolveMember(fields.member_name) : undefined;
-        const [row] = await sql`
-          UPDATE events SET
-            title = COALESCE(${fields.title || null}, title),
-            description = COALESCE(${fields.description ?? null}, description),
-            category = COALESCE(${fields.category || null}, category),
-            event_date = COALESCE(${fields.event_date || null}::timestamptz, event_date),
-            end_date = COALESCE(${fields.end_date || null}::timestamptz, end_date),
-            location = COALESCE(${fields.location ?? null}, location),
-            related_member_id = COALESCE(${memberId || null}, related_member_id),
-            status = COALESCE(${fields.status || null}, status)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
+    const spec = UPDATE_SPECS[entity as Entity];
 
-      case "tasks": {
-        const assignedId = fields.assigned_to_name ? await resolveMember(fields.assigned_to_name) : undefined;
-        const [row] = await sql`
-          UPDATE tasks SET
-            title = COALESCE(${fields.title || null}, title),
-            description = COALESCE(${fields.description ?? null}, description),
-            category = COALESCE(${fields.category || null}, category),
-            assigned_to = COALESCE(${assignedId || null}, assigned_to),
-            due_date = COALESCE(${fields.due_date || null}::timestamptz, due_date),
-            priority = COALESCE(${fields.priority || null}, priority),
-            status = COALESCE(${fields.status || null}, status)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "shopping": {
-        // If replacing image, delete old blob
-        if (fields.image_url !== undefined) {
-          const [existing] = await sql`SELECT image_url FROM shopping_items WHERE id = ${id}`;
-          if (existing?.image_url && existing.image_url !== fields.image_url) {
-            try { await del(existing.image_url); } catch { /* ignore */ }
-          }
-        }
-        const [row] = await sql`
-          UPDATE shopping_items SET
-            item_name = COALESCE(${fields.item_name || null}, item_name),
-            quantity = COALESCE(${fields.quantity ?? null}, quantity),
-            category = COALESCE(${fields.category || null}, category),
-            store = COALESCE(${fields.store ?? null}, store),
-            is_purchased = COALESCE(${fields.is_purchased ?? null}, is_purchased),
-            image_url = COALESCE(${fields.image_url !== undefined ? (fields.image_url || null) : null}, image_url)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "reminders": {
-        const [row] = await sql`
-          UPDATE reminders SET
-            message = COALESCE(${fields.message || null}, message),
-            remind_at = COALESCE(${fields.remind_at || null}::timestamptz, remind_at),
-            is_recurring = COALESCE(${fields.is_recurring ?? null}, is_recurring),
-            recurrence_rule = COALESCE(${fields.recurrence_rule ?? null}, recurrence_rule),
-            status = COALESCE(${fields.status || null}, status)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "medications": {
-        const memberId = fields.for_member_name ? await resolveMember(fields.for_member_name) : undefined;
-        const [row] = await sql`
-          UPDATE medications SET
-            name = COALESCE(${fields.name || null}, name),
-            for_member_id = COALESCE(${memberId || null}, for_member_id),
-            dosage = COALESCE(${fields.dosage ?? null}, dosage),
-            frequency = COALESCE(${fields.frequency ?? null}, frequency),
-            start_date = COALESCE(${fields.start_date || null}::date, start_date),
-            end_date = COALESCE(${fields.end_date || null}::date, end_date),
-            notes = COALESCE(${fields.notes ?? null}, notes)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "keys": {
-        const [row] = await sql`
-          UPDATE keys SET
-            name = COALESCE(${fields.name || null}, name),
-            value = COALESCE(${fields.value || null}, value),
-            category = COALESCE(${fields.category || null}, category),
-            location = COALESCE(${fields.location ?? null}, location),
-            notes = COALESCE(${fields.notes ?? null}, notes)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "inventory": {
-        const specs = fields.specs ? JSON.stringify(fields.specs) : null;
-        const attachments = fields.attachments !== undefined ? JSON.stringify(fields.attachments) : null;
-        const [row] = await sql`
-          UPDATE inventory SET
-            name = COALESCE(${fields.name || null}, name),
-            category = COALESCE(${fields.category || null}, category),
-            sub_category = COALESCE(${fields.sub_category ?? null}, sub_category),
-            brand = COALESCE(${fields.brand ?? null}, brand),
-            model = COALESCE(${fields.model ?? null}, model),
-            serial_number = COALESCE(${fields.serial_number ?? null}, serial_number),
-            location = COALESCE(${fields.location ?? null}, location),
-            purchase_date = COALESCE(${fields.purchase_date || null}::date, purchase_date),
-            warranty_expiry = COALESCE(${fields.warranty_expiry || null}::date, warranty_expiry),
-            cost = COALESCE(${fields.cost ?? null}, cost),
-            notes = COALESCE(${fields.notes ?? null}, notes),
-            specs = COALESCE(${specs}::jsonb, specs),
-            attachments = COALESCE(${attachments}::jsonb, attachments)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "insurance": {
-        const memberId = fields.insured_member_name ? await resolveMember(fields.insured_member_name) : undefined;
-        const attachments = fields.attachments !== undefined ? JSON.stringify(fields.attachments) : null;
-        const [row] = await sql`
-          UPDATE insurance_policies SET
-            title = COALESCE(${fields.title || null}, title),
-            category = COALESCE(${fields.category || null}, category),
-            provider = COALESCE(${fields.provider ?? null}, provider),
-            policy_number = COALESCE(${fields.policy_number ?? null}, policy_number),
-            insured_member_id = COALESCE(${memberId || null}, insured_member_id),
-            start_date = COALESCE(${fields.start_date || null}::date, start_date),
-            end_date = COALESCE(${fields.end_date || null}::date, end_date),
-            monthly_cost = COALESCE(${fields.monthly_cost ?? null}, monthly_cost),
-            contact_phone = COALESCE(${fields.contact_phone ?? null}, contact_phone),
-            contact_name = COALESCE(${fields.contact_name ?? null}, contact_name),
-            notes = COALESCE(${fields.notes ?? null}, notes),
-            attachments = COALESCE(${attachments}::jsonb, attachments)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "finance": {
-        const memberId = fields.related_member_name ? await resolveMember(fields.related_member_name) : undefined;
-        const attachments = fields.attachments !== undefined ? JSON.stringify(fields.attachments) : null;
-        const [row] = await sql`
-          UPDATE finance_records SET
-            title = COALESCE(${fields.title || null}, title),
-            category = COALESCE(${fields.category || null}, category),
-            amount = COALESCE(${fields.amount || null}, amount),
-            currency = COALESCE(${fields.currency || null}, currency),
-            record_date = COALESCE(${fields.record_date || null}::date, record_date),
-            is_recurring = COALESCE(${fields.is_recurring ?? null}, is_recurring),
-            recurrence_rule = COALESCE(${fields.recurrence_rule ?? null}, recurrence_rule),
-            related_member_id = COALESCE(${memberId || null}, related_member_id),
-            notes = COALESCE(${fields.notes ?? null}, notes),
-            attachments = COALESCE(${attachments}::jsonb, attachments)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "cv": {
-        const memberId = fields.member_name ? await resolveMember(fields.member_name) : undefined;
-        const [row] = await sql`
-          UPDATE cv_sections SET
-            member_id = COALESCE(${memberId || null}, member_id),
-            section_type = COALESCE(${fields.section_type || null}, section_type),
-            title = COALESCE(${fields.title || null}, title),
-            organization = COALESCE(${fields.organization ?? null}, organization),
-            start_date = COALESCE(${fields.start_date || null}::date, start_date),
-            end_date = COALESCE(${fields.end_date || null}::date, end_date),
-            is_current = COALESCE(${fields.is_current ?? null}, is_current),
-            description = COALESCE(${fields.description ?? null}, description),
-            sort_order = COALESCE(${fields.sort_order ?? null}, sort_order)
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
-      }
-
-      case "notebook": {
-        const [row] = await sql`
-          UPDATE notebook_entries SET
-            title = COALESCE(${fields.title ?? null}, title),
-            content = COALESCE(${fields.content || null}, content),
-            category = COALESCE(${fields.category || null}, category),
-            is_pinned = COALESCE(${fields.is_pinned ?? null}, is_pinned),
-            updated_at = NOW()
-          WHERE id = ${id}
-          RETURNING *
-        `;
-        return row ? json({ success: true, item: row }) : json({ error: "Not found" }, 404);
+    // Shopping: when the image is replaced or removed, delete the old blob
+    if (entity === "shopping" && body.image_url !== undefined) {
+      const [existing] = await sql`SELECT image_url FROM shopping_items WHERE id = ${id}`;
+      if (existing?.image_url && existing.image_url !== body.image_url) {
+        try { await del(existing.image_url); } catch { /* ignore */ }
       }
     }
+
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    const add = (column: string, value: unknown) => {
+      values.push(value);
+      sets.push(`${column} = $${values.length}`);
+    };
+
+    for (const column of spec.columns) {
+      if (!(column in body)) continue;
+      let value: unknown = body[column];
+      if (value === "" || value === undefined) value = null;
+      if (value === null && spec.notNull.includes(column)) continue;
+      if (value !== null && spec.json?.includes(column)) value = JSON.stringify(value);
+      add(column, value);
+    }
+
+    if (spec.member && spec.member.key in body) {
+      const name = body[spec.member.key];
+      if (!name) {
+        add(spec.member.column, null);
+      } else {
+        const memberId = await resolveMember(String(name));
+        if (memberId) add(spec.member.column, memberId);
+      }
+    }
+
+    if (sets.length === 0) return json({ error: "Nothing to update" }, 400);
+    if (spec.touch) sets.push(`${spec.touch} = NOW()`);
+
+    values.push(id);
+    const rows = await sql(
+      `UPDATE ${spec.table} SET ${sets.join(", ")} WHERE id = $${values.length} RETURNING *`,
+      values
+    );
+    return rows[0] ? json({ success: true, item: rows[0] }) : json({ error: "Not found" }, 404);
   } catch (error) {
     console.error(`CRUD PUT ${entity}:`, error);
     return json({ error: error instanceof Error ? error.message : "Update failed" }, 500);

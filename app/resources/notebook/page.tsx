@@ -138,13 +138,15 @@ export default function NotebookPage() {
     }
   };
 
-  const handleDelete = async (id: string, label: string) => {
-    if (!confirm(`למחוק את "${label}"?`)) return;
+  const handleDelete = async (id: string, label: string): Promise<boolean> => {
+    if (!confirm(`למחוק את "${label}"?`)) return false;
     try {
       await crudRequest("notebook", "DELETE", { id });
       refresh();
+      return true;
     } catch {
       alert("שגיאה במחיקה");
+      return false;
     }
   };
 
@@ -196,11 +198,12 @@ export default function NotebookPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() =>
-                handleDelete(viewing.id, viewing.title || "רשומה").then(() =>
-                  setViewing(null),
-                )
+                handleDelete(viewing.id, viewing.title || "רשומה").then((ok) => {
+                  if (ok) setViewing(null);
+                })
               }
               className="text-muted hover:text-red-500 transition-colors text-lg px-3 py-2"
+              aria-label="מחיקה"
             >
               🗑️
             </button>
@@ -216,18 +219,7 @@ export default function NotebookPage() {
           {viewing.title && (
             <h1 className="text-2xl font-bold mb-5">{viewing.title}</h1>
           )}
-          <div
-            className="prose prose-base prose-invert max-w-none
-            prose-headings:text-primary prose-headings:font-bold
-            prose-p:text-secondary prose-p:leading-relaxed
-            prose-strong:text-primary prose-em:text-secondary
-            prose-li:text-secondary prose-li:marker:text-muted
-            prose-hr:border-border
-            prose-a:text-link prose-a:no-underline hover:prose-a:underline
-            prose-blockquote:border-border prose-blockquote:text-muted
-            prose-code:text-primary prose-code:bg-tag prose-code:px-1 prose-code:rounded
-            prose-pre:bg-card prose-pre:border prose-pre:border-border"
-          >
+          <div className="chat-prose text-base max-w-3xl">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {viewing.content}
             </ReactMarkdown>
@@ -425,6 +417,7 @@ export default function NotebookPage() {
                             handleDelete(entry.id, entry.title || "רשומה")
                           }
                           className="text-lg text-muted hover:text-red-500 p-2 rounded-lg hover:bg-hover transition-colors"
+                          aria-label="מחיקה"
                         >
                           🗑️
                         </button>

@@ -93,7 +93,8 @@ export default function FileUpload({ attachments, onChange }: FileUploadProps) {
               <button
                 type="button"
                 onClick={() => handleRemove(i)}
-                className="text-muted hover:text-red-500 text-xs px-1 transition-colors"
+                className="text-muted hover:text-red-500 text-xs px-2 py-1 rounded transition-colors"
+                aria-label="הסרת קובץ"
               >
                 ✕
               </button>
@@ -125,7 +126,7 @@ export default function FileUpload({ attachments, onChange }: FileUploadProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,image/*,application/pdf"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) handleFile(file);

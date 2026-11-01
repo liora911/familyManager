@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   INVENTORY_CATEGORIES,
   findCategoryBySubKey,
@@ -42,6 +42,10 @@ export async function crudRequest(entity: string, method: string, body: Record<s
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  if (res.status === 401) {
+    window.location.href = "/login";
+    throw new Error("יש להתחבר מחדש");
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "שגיאה");
   return data;
@@ -52,7 +56,7 @@ export async function crudRequest(entity: string, method: string, body: Record<s
 interface FormField {
   key: string;
   label: string;
-  type: "text" | "select" | "datetime" | "date" | "checkbox" | "textarea";
+  type: "text" | "number" | "select" | "datetime" | "date" | "checkbox" | "textarea";
   required?: boolean;
   options?: { value: string; label: string }[];
 }
@@ -243,7 +247,7 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
     },
     { key: "start_date", label: "תאריך התחלה", type: "date" },
     { key: "end_date", label: "תאריך סיום", type: "date" },
-    { key: "monthly_cost", label: "עלות חודשית", type: "text" },
+    { key: "monthly_cost", label: "עלות חודשית", type: "number" },
     { key: "contact_name", label: "איש קשר", type: "text" },
     { key: "contact_phone", label: "טלפון", type: "text" },
     { key: "notes", label: "הערות", type: "textarea" },
@@ -264,7 +268,7 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
         { value: "other", label: "אחר" },
       ],
     },
-    { key: "amount", label: "סכום", type: "text", required: true },
+    { key: "amount", label: "סכום", type: "number", required: true },
     {
       key: "currency",
       label: "מטבע",
@@ -525,6 +529,15 @@ export default function FormModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const entityLabels: Record<string, string> = {
     insurance: "ביטוח",
     finance: "כספים",
@@ -556,7 +569,7 @@ export default function FormModal({
             delete payload[key];
           }
         }
-        if (Object.keys(specs).length > 0) payload.specs = specs;
+        payload.specs = specs;
       }
 
       if (mode === "create") {
@@ -576,6 +589,8 @@ export default function FormModal({
     <div
       className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
         className="bg-card rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto"
@@ -587,8 +602,10 @@ export default function FormModal({
             {mode === "create" ? `הוספת ${tabLabel}` : `עריכת ${tabLabel}`}
           </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="text-muted hover:text-primary text-xl leading-none"
+            className="text-muted hover:text-primary text-xl leading-none p-2 -m-2 rounded-lg hover:bg-hover"
+            aria-label="סגירה"
           >
             ✕
           </button>
@@ -707,8 +724,13 @@ export default function FormModal({
                       ? "datetime-local"
                       : field.type === "date"
                         ? "date"
-                        : "text"
+                        : field.type === "number"
+                          ? "number"
+                          : "text"
                   }
+                  inputMode={field.type === "number" ? "decimal" : undefined}
+                  step={field.type === "number" ? "any" : undefined}
+                  min={field.type === "number" ? "0" : undefined}
                   value={(form[field.key] as string) || ""}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
