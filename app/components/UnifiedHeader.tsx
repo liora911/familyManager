@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import HouseIcon from "@/app/components/HouseIcon";
 import { useTheme } from "@/app/components/ThemeProvider";
 import {
@@ -17,6 +18,8 @@ const USER_LABELS: Record<string, string> = {
   liora: "ליאורה",
   shared: "משותף",
 };
+
+export type HeaderSection = "chat" | "inventory" | "resources";
 
 // ── Monochrome SVG Icons ─────────────────────────────────────────────
 
@@ -40,6 +43,14 @@ function BellIcon({ className }: { className?: string }) {
   return (
     <svg className={className} width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M10 2a6 6 0 00-6 6c0 1.887-.454 3.665-1.257 5.234a.75.75 0 00.515 1.076 32.91 32.91 0 003.256.508 3.5 3.5 0 006.972 0 32.903 32.903 0 003.256-.508.75.75 0 00.515-1.076A11.448 11.448 0 0116 8a6 6 0 00-6-6zM8.05 14.943a33.54 33.54 0 003.9 0 2 2 0 01-3.9 0z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function ChatIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902 1.168.188 2.352.327 3.55.414.28.02.521.18.642.413l1.713 3.293a.75.75 0 001.33 0l1.713-3.293a.783.783 0 01.642-.413 41.102 41.102 0 003.55-.414c1.437-.231 2.43-1.49 2.43-2.902V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zM6.75 6a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 2.5a.75.75 0 000 1.5h3.5a.75.75 0 000-1.5h-3.5z" clipRule="evenodd" />
     </svg>
   );
 }
@@ -95,29 +106,40 @@ function PlusIcon({ className }: { className?: string }) {
 }
 
 // ── Header ───────────────────────────────────────────────────────────
+//
+// Shared top bar for every signed-in page. On the home page the callbacks
+// switch views in place; elsewhere (e.g. /resources) they navigate home.
 
 export default function UnifiedHeader({
   user,
-  isPanelOpen,
-  isInventoryOpen,
-  hasMessages,
+  active,
+  isPanelOpen = false,
+  hasMessages = false,
   onTogglePanel,
   onClearChat,
   onOpenInventory,
+  onOpenChat,
 }: {
   user: string;
-  isPanelOpen: boolean;
-  isInventoryOpen?: boolean;
-  hasMessages: boolean;
-  onTogglePanel: () => void;
-  onClearChat: () => void;
+  /** Which section is showing, for the highlighted nav item */
+  active: HeaderSection;
+  isPanelOpen?: boolean;
+  hasMessages?: boolean;
+  onTogglePanel?: () => void;
+  onClearChat?: () => void;
   onOpenInventory?: () => void;
+  onOpenChat?: () => void;
 }) {
+  const router = useRouter();
   const { theme, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [push, setPush] = useState<PushStatus | "loading">("loading");
   const [pushBusy, setPushBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const goChat = onOpenChat ?? (() => router.push("/"));
+  const goInventory = onOpenInventory ?? (() => router.push("/#inventory"));
+  const toggleDashboard = onTogglePanel ?? (() => router.push("/#dashboard"));
 
   useEffect(() => {
     getPushStatus().then(setPush).catch(() => setPush("unsupported"));
@@ -174,11 +196,30 @@ export default function UnifiedHeader({
   const pushLabel = pushOn ? "התראות פעילות" : "הפעלת התראות";
   const themeLabel = theme === "dark" ? "מצב בהיר" : "מצב כהה";
 
+  const navPill = (isActive: boolean) =>
+    `hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors ${
+      isActive ? "text-link bg-badge-blue-bg" : "text-muted hover:text-primary"
+    }`;
+
+  const menuItem = (isActive = false) =>
+    `w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm transition-colors ${
+      isActive ? "text-link bg-badge-blue-bg" : "text-primary hover:bg-hover"
+    }`;
+
+  const close = (fn: () => void) => () => {
+    setMenuOpen(false);
+    fn();
+  };
+
   return (
-    <header className="flex-shrink-0 border-b border-border bg-card px-3 sm:px-6 py-3">
+    <header className="flex-shrink-0 border-b border-border bg-card px-3 sm:px-6 py-3" dir="rtl">
       <div className="flex items-center justify-between gap-2">
-        {/* Logo + title */}
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Logo + title (goes to chat) */}
+        <button
+          onClick={goChat}
+          className="flex items-center gap-2 min-w-0 text-right rounded-lg -m-1 p-1 hover:bg-hover transition-colors"
+          aria-label="מעבר לצ׳אט"
+        >
           <HouseIcon size={24} className="text-link flex-shrink-0" />
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-medium text-primary truncate">
@@ -190,7 +231,7 @@ export default function UnifiedHeader({
                 : `שלום ${USER_LABELS[user] || user}`}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Actions */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -217,7 +258,7 @@ export default function UnifiedHeader({
               <BellIcon />
             </button>
           )}
-          {hasMessages && (
+          {hasMessages && onClearChat && (
             <button
               onClick={onClearChat}
               className="hidden sm:flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors px-2 py-1.5 rounded-lg hover:bg-hover"
@@ -233,36 +274,19 @@ export default function UnifiedHeader({
             <UserIcon className="w-3.5 h-3.5" />
             החלף פרופיל
           </button>
-          {onOpenInventory && (
-            <button
-              onClick={onOpenInventory}
-              className={`hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors ${
-                isInventoryOpen
-                  ? "text-link bg-badge-blue-bg"
-                  : "text-muted hover:text-primary"
-              }`}
-              aria-pressed={!!isInventoryOpen}
-            >
-              <InventoryIcon />
-              מלאי הבית
-            </button>
-          )}
-          <Link
-            href="/resources"
-            className="hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors text-muted hover:text-primary"
-          >
+          <button onClick={goChat} className={navPill(active === "chat")} aria-current={active === "chat" ? "page" : undefined}>
+            <ChatIcon />
+            צ׳אט
+          </button>
+          <button onClick={goInventory} className={navPill(active === "inventory")} aria-current={active === "inventory" ? "page" : undefined}>
+            <InventoryIcon />
+            מלאי הבית
+          </button>
+          <Link href="/resources" className={navPill(active === "resources")} aria-current={active === "resources" ? "page" : undefined}>
             <FolderIcon />
             משאבים
           </Link>
-          <button
-            onClick={onTogglePanel}
-            className={`hidden sm:flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors ${
-              isPanelOpen
-                ? "text-link bg-badge-blue-bg"
-                : "text-muted hover:text-primary"
-            }`}
-            aria-pressed={isPanelOpen}
-          >
+          <button onClick={toggleDashboard} className={navPill(isPanelOpen)} aria-pressed={isPanelOpen}>
             <ClipboardIcon />
             דשבורד ניהול
           </button>
@@ -275,13 +299,20 @@ export default function UnifiedHeader({
             <LogoutIcon />
           </button>
 
-          {/* ── Mobile: dashboard toggle + overflow menu ── */}
+          {/* ── Mobile: chat (when elsewhere) + dashboard + overflow menu ── */}
+          {active !== "chat" && (
+            <button
+              onClick={goChat}
+              className="sm:hidden p-2.5 rounded-full text-muted hover:text-primary transition-colors"
+              aria-label="צ׳אט"
+            >
+              <ChatIcon className="w-5 h-5" />
+            </button>
+          )}
           <button
-            onClick={onTogglePanel}
+            onClick={toggleDashboard}
             className={`sm:hidden p-2.5 rounded-full transition-colors ${
-              isPanelOpen
-                ? "text-link bg-badge-blue-bg"
-                : "text-muted hover:text-primary"
+              isPanelOpen ? "text-link bg-badge-blue-bg" : "text-muted hover:text-primary"
             }`}
             aria-label="דשבורד ניהול"
             aria-pressed={isPanelOpen}
@@ -307,71 +338,51 @@ export default function UnifiedHeader({
                 className="absolute left-0 top-full mt-1 w-56 bg-card border border-border rounded-xl
                            shadow-lg z-50 py-1 overflow-hidden"
               >
-                {onOpenInventory && (
-                  <button
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); onOpenInventory(); }}
-                    className={`w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm transition-colors ${
-                      isInventoryOpen ? "text-link bg-badge-blue-bg" : "text-primary hover:bg-hover"
-                    }`}
-                  >
-                    <InventoryIcon className={`w-4 h-4 flex-shrink-0 ${isInventoryOpen ? "text-link" : "text-muted"}`} />
-                    מלאי הבית
-                  </button>
-                )}
+                <button role="menuitem" onClick={close(goChat)} className={menuItem(active === "chat")}>
+                  <ChatIcon className={`w-4 h-4 flex-shrink-0 ${active === "chat" ? "text-link" : "text-muted"}`} />
+                  צ׳אט
+                </button>
+                <button role="menuitem" onClick={close(goInventory)} className={menuItem(active === "inventory")}>
+                  <InventoryIcon className={`w-4 h-4 flex-shrink-0 ${active === "inventory" ? "text-link" : "text-muted"}`} />
+                  מלאי הבית
+                </button>
                 <Link
                   role="menuitem"
                   href="/resources"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2.5 w-full text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
+                  className={menuItem(active === "resources")}
                 >
-                  <FolderIcon className="w-4 h-4 text-muted flex-shrink-0" />
+                  <FolderIcon className={`w-4 h-4 flex-shrink-0 ${active === "resources" ? "text-link" : "text-muted"}`} />
                   משאבים
                 </Link>
                 {push !== "loading" && (
-                  <button
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); handlePushToggle(); }}
-                    className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
-                  >
+                  <button role="menuitem" onClick={close(handlePushToggle)} className={menuItem()}>
                     <BellIcon className={`w-4 h-4 flex-shrink-0 ${pushOn ? "text-link" : "text-muted"}`} />
                     {pushLabel}
                     {pushOn && <span className="mr-auto text-xs text-link">✓</span>}
                   </button>
                 )}
-                <button
-                  role="menuitem"
-                  onClick={() => { setMenuOpen(false); toggle(); }}
-                  className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
-                >
+                <button role="menuitem" onClick={close(toggle)} className={menuItem()}>
                   {theme === "dark"
                     ? <SunIcon className="w-4 h-4 text-muted flex-shrink-0" />
                     : <MoonIcon className="w-4 h-4 text-muted flex-shrink-0" />
                   }
                   {themeLabel}
                 </button>
-                {hasMessages && (
-                  <button
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); onClearChat(); }}
-                    className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
-                  >
+                {hasMessages && onClearChat && (
+                  <button role="menuitem" onClick={close(onClearChat)} className={menuItem()}>
                     <PlusIcon className="w-4 h-4 text-muted flex-shrink-0" />
                     שיחה חדשה
                   </button>
                 )}
-                <button
-                  role="menuitem"
-                  onClick={() => { setMenuOpen(false); handleSwitchUser(); }}
-                  className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-primary hover:bg-hover transition-colors"
-                >
+                <button role="menuitem" onClick={close(handleSwitchUser)} className={menuItem()}>
                   <UserIcon className="w-4 h-4 text-muted flex-shrink-0" />
                   החלף פרופיל
                 </button>
                 <div className="border-t border-border" />
                 <button
                   role="menuitem"
-                  onClick={() => { setMenuOpen(false); handleLogout(); }}
+                  onClick={close(handleLogout)}
                   className="w-full flex items-center gap-2.5 text-right px-4 py-3 text-sm text-red-500 hover:bg-hover transition-colors"
                 >
                   <LogoutIcon className="w-4 h-4 flex-shrink-0" />

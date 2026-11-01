@@ -16,10 +16,11 @@ function getUser(): string {
 
 const PANEL_STORAGE_KEY = "dashboard-panel-open";
 const INVENTORY_HASH = "#inventory";
+const DASHBOARD_HASH = "#dashboard"; // other pages link here to open the dashboard
 
 const PANEL_WIDTH = 380;
 const PANEL_WIDTH_EXPANDED = 700;
-const PANEL_WIDTH_COLLAPSED = 56;
+const PANEL_WIDTH_COLLAPSED = 104;
 
 function Home() {
   const [user, setUser] = useState("shared");
@@ -52,7 +53,21 @@ function Home() {
   // Inventory lives behind a URL hash, so the phone's back button closes it
   // instead of leaving the app, and a reload keeps it open.
   useEffect(() => {
-    const sync = () => setShowInventory(window.location.hash === INVENTORY_HASH);
+    const sync = () => {
+      const hash = window.location.hash;
+      if (hash === DASHBOARD_HASH) {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+        if (window.matchMedia("(min-width: 1024px)").matches) {
+          setIsPanelOpen(true);
+          localStorage.setItem(PANEL_STORAGE_KEY, "true");
+        } else {
+          setIsDrawerOpen(true);
+        }
+        setShowInventory(false);
+        return;
+      }
+      setShowInventory(hash === INVENTORY_HASH);
+    };
     sync();
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
@@ -110,12 +125,13 @@ function Home() {
     <div dir="rtl" className="chat-viewport flex flex-col h-dvh bg-surface text-primary">
       <UnifiedHeader
         user={user}
+        active={showInventory ? "inventory" : "chat"}
         isPanelOpen={isDesktop ? isPanelOpen : isDrawerOpen}
-        isInventoryOpen={showInventory}
         hasMessages={hasMessages}
         onTogglePanel={handleTogglePanel}
         onClearChat={handleClearChat}
         onOpenInventory={openInventory}
+        onOpenChat={closeInventory}
       />
 
       {showInventory ? (
@@ -140,24 +156,30 @@ function Home() {
                 {isPanelOpen && (
                   <button
                     onClick={() => setIsPanelExpanded((p) => !p)}
-                    className="flex-shrink-0 self-start mt-2 w-5 h-9 bg-card
-                               border border-border border-l-0 rounded-r-lg
-                               flex items-center justify-center
-                               text-muted hover:text-primary hover:bg-hover
+                    className="group flex-shrink-0 self-start mt-3 w-10 py-4
+                               flex flex-col items-center gap-2
+                               bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white
+                               rounded-r-2xl shadow-lg shadow-blue-600/30
+                               ring-1 ring-blue-400/40
                                transition-colors z-10"
                     style={{ marginLeft: "-1px" }}
-                    title={isPanelExpanded ? "צמצם" : "הרחב"}
+                    title={isPanelExpanded ? "צמצם את הדשבורד" : "הרחב את הדשבורד"}
                     aria-label={isPanelExpanded ? "צמצום הדשבורד" : "הרחבת הדשבורד"}
+                    aria-expanded={isPanelExpanded}
                   >
                     <svg
-                      width="10" height="10" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="2.5"
+                      width="22" height="22" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="3"
                       strokeLinecap="round" strokeLinejoin="round"
-                      className={`transition-transform duration-300 ${isPanelExpanded ? "" : "rotate-180"}`}
+                      className={`transition-transform duration-300 group-hover:scale-110 ${isPanelExpanded ? "" : "rotate-180"}`}
                       aria-hidden="true"
                     >
-                      <path d="M15 19l-7-7 7-7" />
+                      <path d="M13 19l-7-7 7-7" />
+                      <path d="M19 19l-7-7 7-7" />
                     </svg>
+                    <span className="text-sm font-semibold tracking-wide [writing-mode:vertical-rl]">
+                      {isPanelExpanded ? "צמצם" : "הרחב"}
+                    </span>
                   </button>
                 )}
 
@@ -185,20 +207,21 @@ function Home() {
                   ) : (
                     /* Collapsed icon sidebar */
                     <div
-                      className="h-full flex flex-col items-center py-3 gap-1 bg-card"
+                      className="h-full flex flex-col items-center py-4 gap-2 bg-card overflow-y-auto"
                       style={{ width: PANEL_WIDTH_COLLAPSED }}
                     >
                       {tabs.map((tab) => (
                         <button
                           key={tab.key}
                           onClick={() => handleSidebarIconClick(tab.key)}
-                          className="w-10 h-10 flex items-center justify-center rounded-xl
-                                     text-lg text-muted hover:text-primary hover:bg-hover
-                                     transition-colors"
+                          className="w-[88px] py-3 flex flex-col items-center gap-1.5 rounded-2xl
+                                     text-secondary hover:text-primary hover:bg-hover
+                                     active:scale-95 transition-all"
                           title={tab.label}
                           aria-label={tab.label}
                         >
-                          <span aria-hidden="true">{tab.icon}</span>
+                          <span className="text-4xl leading-none" aria-hidden="true">{tab.icon}</span>
+                          <span className="text-sm font-medium">{tab.label}</span>
                         </button>
                       ))}
                     </div>

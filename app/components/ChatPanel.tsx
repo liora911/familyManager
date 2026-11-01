@@ -53,13 +53,18 @@ function saveMessages(msgs: Message[]) {
 }
 
 // ── Suggestion chips ─────────────────────────────────────────────────
+// Tapping a chip drops its starter into the input (not sent) so the user
+// finishes the sentence. Keep starters short and ending where typing begins.
 
-const SUGGESTIONS = [
-  "מה יש לנו השבוע?",
-  "תוסיף חלב וביצים לסופר",
-  "תזכיר לי מחר בבוקר לחדש ביטוח",
-  "תנעץ רופא עיניים לאיתן",
-  "מה המצב עם המשימות?",
+const SUGGESTIONS: { icon: string; label: string; starter: string }[] = [
+  { icon: "⏰", label: "תזכורת", starter: "תזכיר לי מחר ב-" },
+  { icon: "🛒", label: "קניות", starter: "תוסיף לרשימת הקניות " },
+  { icon: "📅", label: "תור או אירוע", starter: "תקבע תור ל" },
+  { icon: "✅", label: "משימה", starter: "משימה חדשה: " },
+  { icon: "📋", label: "סיכום", starter: "מה יש לנו " },
+  { icon: "💊", label: "תרופה", starter: "תוסיף תרופה ל" },
+  { icon: "💰", label: "הוצאה", starter: "תרשום הוצאה של " },
+  { icon: "📓", label: "מחברת", starter: "תרשום במחברת: " },
 ];
 
 // ── Component ────────────────────────────────────────────────────────
@@ -122,6 +127,18 @@ const ChatPanel = forwardRef<
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     requestAnimationFrame(adjustHeight);
+  };
+
+  /** Put a hint in the box (without sending) and place the cursor at the end */
+  const fillInput = (text: string) => {
+    setInput(text);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      adjustHeight();
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    });
   };
 
   // ── Image handling ────────────────────────────────────────────────
@@ -301,17 +318,20 @@ const ChatPanel = forwardRef<
               <p className="text-sm text-muted mb-8">
                 אפשר לכתוב כל בקשה בשפה חופשית
               </p>
-              <div className="flex flex-wrap justify-center gap-2 max-w-md px-4">
+              <div className="flex flex-wrap justify-center gap-2 max-w-lg px-4">
                 {SUGGESTIONS.map((s) => (
                   <button
-                    key={s}
-                    onClick={() => handleSubmit(s)}
-                    className="text-sm px-4 py-2 rounded-full
+                    key={s.label}
+                    onClick={() => fillInput(s.starter)}
+                    title={s.starter}
+                    aria-label={`${s.label}: ${s.starter}`}
+                    className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full
                                bg-card border border-border text-secondary
                                hover:bg-hover hover:text-primary hover:border-divider
-                               transition-all duration-200"
+                               active:scale-95 transition-all duration-200"
                   >
-                    {s}
+                    <span aria-hidden="true">{s.icon}</span>
+                    {s.label}
                   </button>
                 ))}
               </div>
