@@ -2,6 +2,7 @@ import { sql } from "@/lib/db";
 import { del } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { scheduleReminder } from "@/lib/scheduler";
+import { encryptValue } from "@/lib/key-vault";
 
 const VALID_ENTITIES = ["events", "tasks", "shopping", "reminders", "medications", "keys", "inventory", "insurance", "finance", "cv", "notebook"] as const;
 type Entity = (typeof VALID_ENTITIES)[number];
@@ -91,11 +92,13 @@ export async function POST(
       }
 
       case "keys": {
+        if (!body.name || !body.value) return json({ error: "Missing name or value" }, 400);
+        // The value is stored encrypted and never returned from this route
         const [row] = await sql`
           INSERT INTO keys (name, value, category, location, notes)
-          VALUES (${body.name}, ${body.value}, ${body.category || "other"},
+          VALUES (${body.name}, ${encryptValue(String(body.value))}, ${body.category || "other"},
                   ${body.location || null}, ${body.notes || null})
-          RETURNING *
+          RETURNING id, name, category, location, notes, created_at
         `;
         return json({ success: true, item: row });
       }
@@ -293,6 +296,7 @@ export async function PUT(
       if (value === "" || value === undefined) value = null;
       if (value === null && spec.notNull.includes(column)) continue;
       if (value !== null && spec.json?.includes(column)) value = JSON.stringify(value);
+      if (value !== null && entity === "keys" && column === "value") value = encryptValue(String(value));
       add(column, value);
     }
 
@@ -315,6 +319,7 @@ export async function PUT(
       values
     );
     const updated = rows[0];
+    if (updated && entity === "keys") delete updated.value;
     // A reminder with a new time (or reopened) needs a new exact-time booking
     if (
       updated &&

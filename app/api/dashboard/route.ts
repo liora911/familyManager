@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { encryptLegacyKeys } from "@/lib/key-vault";
 import { NextRequest, NextResponse } from "next/server";
 
 // Map user cookie value → family_members name for filtering
@@ -28,6 +29,11 @@ export async function GET(req: NextRequest) {
     const memberFilter = (column: string) =>
       memberId ? ` AND (${column} = $1 OR ${column} IS NULL)` : "";
     const memberParams = memberId ? [memberId] : [];
+
+    // Encrypt any key values saved before encryption was added
+    encryptLegacyKeys().catch((err) =>
+      console.error("Key encryption migration failed:", err instanceof Error ? err.message : err)
+    );
 
     const [
       events,
@@ -82,7 +88,8 @@ export async function GET(req: NextRequest) {
           LEFT JOIN events e ON r.event_id = e.id
           WHERE r.status = 'pending'
           ORDER BY r.remind_at ASC`,
-      sql`SELECT * FROM keys ORDER BY category, name`,
+      // Key values are never sent here; /api/keys/reveal returns one at a time
+      sql`SELECT id, name, category, location, notes, created_at FROM keys ORDER BY category, name`,
       sql`SELECT * FROM inventory ORDER BY category, name`,
       sql`SELECT ip.*, fm.name as member_name
           FROM insurance_policies ip

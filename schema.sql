@@ -217,6 +217,17 @@ CREATE TABLE IF NOT EXISTS notification_log (
 );
 CREATE INDEX IF NOT EXISTS idx_notification_log_channel_time ON notification_log(channel, sent_at DESC);
 
+-- Wrong PIN attempts, for the login limit.
+-- Created automatically by the app on first use; listed here for reference.
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ip TEXT NOT NULL,
+  attempted_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_time ON login_attempts(attempted_at);
+
+-- keys.value holds encrypted text ("enc:v1:...", see lib/key-vault.ts).
+
 -- Which due time already has an exact-time QStash booking.
 -- Created automatically by the app on first use; listed here for reference.
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS scheduled_run_at TIMESTAMPTZ;

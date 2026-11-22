@@ -67,10 +67,24 @@ interface Medication {
 interface KeyItem {
   id: string;
   name: string;
-  value: string;
   category: string;
   location?: string;
   notes?: string;
+}
+
+/** Key values are not part of the dashboard data; each is fetched on demand. */
+async function fetchKeyValue(id: string): Promise<string> {
+  const r = await fetch("/api/keys/reveal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (r.status === 401) {
+    window.location.href = "/login";
+    throw new Error("יש להתחבר מחדש");
+  }
+  if (!r.ok) throw new Error("שגיאה");
+  return (await r.json()).value;
 }
 
 interface DashboardData {
@@ -218,7 +232,8 @@ export default function DashboardPanel({
   const [eventsView, setEventsView] = useState<"list" | "calendar">("list");
   const [showExpired, setShowExpired] = useState(false);
   const [showPurchased, setShowPurchased] = useState(false);
-  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+  // Key id → its real value, for keys the user chose to show
+  const [revealedKeys, setRevealedKeys] = useState<Map<string, string>>(new Map());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [modal, setModal] = useState<{
     entity: string;
@@ -235,6 +250,8 @@ export default function DashboardPanel({
   const { subscribeRefresh } = useDashboardRefresh();
 
   const refresh = useCallback(() => {
+    // A shown value may have just been edited; hide them all again
+    setRevealedKeys(new Map());
     fetchDashboard()
       .then((d) => {
         if (d) setData(d);
@@ -286,18 +303,56 @@ export default function DashboardPanel({
     }
   };
 
-  const toggleReveal = (id: string) => {
-    setRevealedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleReveal = async (id: string) => {
+    if (revealedKeys.has(id)) {
+      setRevealedKeys((prev) => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+      return;
+    }
+    try {
+      const value = await fetchKeyValue(id);
+      setRevealedKeys((prev) => new Map(prev).set(id, value));
+    } catch {
+      alert("שגיאה בטעינת הערך");
+    }
+  };
+
+  const openKeyEdit = async (k: KeyItem) => {
+    try {
+      const value = revealedKeys.get(k.id) ?? (await fetchKeyValue(k.id));
+      setModal({
+        entity: "keys",
+        mode: "edit",
+        initial: {
+          id: k.id,
+          name: k.name,
+          value,
+          category: k.category,
+          location: k.location,
+          notes: k.notes,
+        },
+      });
+    } catch {
+      alert("שגיאה בטעינת הערך");
+    }
   };
 
   const copyKey = async (k: KeyItem) => {
     try {
-      await navigator.clipboard.writeText(k.value);
+      const known = revealedKeys.get(k.id);
+      if (known !== undefined) {
+        await navigator.clipboard.writeText(known);
+      } else if (typeof ClipboardItem !== "undefined") {
+        // Safari only allows copying inside the tap itself, so hand it a
+        // promise for the value instead of waiting for the fetch first
+        const text = fetchKeyValue(k.id).then((v) => new Blob([v], { type: "text/plain" }));
+        await navigator.clipboard.write([new ClipboardItem({ "text/plain": text })]);
+      } else {
+        await navigator.clipboard.writeText(await fetchKeyValue(k.id));
+      }
       setCopiedKey(k.id);
       setTimeout(() => setCopiedKey((c) => (c === k.id ? null : c)), 1500);
     } catch {
@@ -781,20 +836,7 @@ export default function DashboardPanel({
                     return (
                       <Card
                         key={k.id}
-                        onEdit={() =>
-                          setModal({
-                            entity: "keys",
-                            mode: "edit",
-                            initial: {
-                              id: k.id,
-                              name: k.name,
-                              value: k.value,
-                              category: k.category,
-                              location: k.location,
-                              notes: k.notes,
-                            },
-                          })
-                        }
+                        onEdit={() => openKeyEdit(k)}
                         onDelete={() => handleDelete("keys", k.id, k.name)}
                       >
                         <p className="font-medium text-sm">{k.name}</p>
@@ -804,7 +846,7 @@ export default function DashboardPanel({
                             dir="ltr"
                             style={{ textAlign: "right" }}
                           >
-                            {revealed ? k.value : "••••••••"}
+                            {revealed ? revealedKeys.get(k.id) : "••••••••"}
                           </p>
                           <button
                             onClick={() => toggleReveal(k.id)}

@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { isWallTime, withIsraelOffset } from "@/lib/time";
 import { scheduleReminder } from "@/lib/scheduler";
+import { decryptValue, encryptValue } from "@/lib/key-vault";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function executeTool(name: string, rawInput: Record<string, any>): Promise<any> {
@@ -447,20 +448,21 @@ export async function executeTool(name: string, rawInput: Record<string, any>): 
       if (existing) {
         const [updated] = await sql`
           UPDATE keys SET
-            value = ${input.value},
+            value = ${encryptValue(String(input.value))},
             category = COALESCE(${input.category || null}, category),
             location = COALESCE(${input.location || null}, location),
             notes = COALESCE(${input.notes || null}, notes)
           WHERE id = ${existing.id}
-          RETURNING *
+          RETURNING id, name, category, location, notes
         `;
         return { success: true, key: updated, action: "updated" };
       }
+      // Values are stored encrypted (lib/key-vault.ts)
       const [key] = await sql`
         INSERT INTO keys (name, value, category, location, notes)
-        VALUES (${input.name}, ${input.value}, ${input.category || "other"},
+        VALUES (${input.name}, ${encryptValue(String(input.value))}, ${input.category || "other"},
                 ${input.location || null}, ${input.notes || null})
-        RETURNING *
+        RETURNING id, name, category, location, notes
       `;
       return { success: true, key, action: "created" };
     }
@@ -478,7 +480,7 @@ export async function executeTool(name: string, rawInput: Record<string, any>): 
       }
       query += ` ORDER BY category, name`;
       const rows = await sql(query, params);
-      return { keys: rows };
+      return { keys: rows.map((row) => ({ ...row, value: decryptValue(row.value) })) };
     }
 
     case "delete_key": {

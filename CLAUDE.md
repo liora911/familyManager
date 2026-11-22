@@ -15,8 +15,10 @@ A Hebrew RTL Next.js 15 App Router app. Single giant text input + "שגר" butto
 Simple PIN gate. No NextAuth, no sessions, no OAuth.
 - Single env var: `APP_PIN=XXXX`
 - On first visit, show a PIN input screen (dark theme, centered, Hebrew)
-- Store PIN in a cookie (`home-manager-auth`) with `httpOnly: false`, `maxAge: 30 days`
-- Middleware checks cookie on all routes except `/api/cron`
+- On a correct PIN the server sets a signed session cookie (`home-manager-auth`, `HttpOnly`, `maxAge: 30 days`). The value is `<expiry>.<HMAC>` keyed by `APP_SECRET` (`lib/session.ts`); changing `APP_PIN` or `APP_SECRET` logs everyone out. `DELETE /api/auth` logs out.
+- Wrong PIN attempts are limited to 5 per 15 minutes per IP and 50 per hour overall (`lib/login-limit.ts`, table `login_attempts`)
+- Saved keys are encrypted in the DB with a key derived from `APP_SECRET` (`lib/key-vault.ts`). The dashboard never receives key values; `POST /api/keys/reveal` returns one at a time.
+- Middleware verifies the cookie on all routes except `/api/cron`
 - No user management, no registration, no logout needed (but nice to have a small logout button)
 
 ## Architecture
@@ -235,6 +237,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 ANTHROPIC_API_KEY=sk-ant-...
 DATABASE_URL=postgresql://...neon.tech/neondb?sslmode=require
 APP_PIN=...
+APP_SECRET=... (32+ random characters; signs sessions and encrypts saved keys — never change it once keys are saved)
 RESEND_API_KEY=re_...
 REMINDER_EMAIL=liora532@gmail.com
 CRON_SECRET=... (to secure the cron endpoint)

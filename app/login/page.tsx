@@ -28,7 +28,8 @@ export default function LoginPage() {
         router.push("/select");
         router.refresh();
       } else {
-        setError("קוד שגוי, נסו שוב");
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "קוד שגוי, נסו שוב");
         setPin("");
       }
     } catch {

@@ -157,8 +157,9 @@ export default function UnifiedHeader({
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
-  const handleLogout = () => {
-    document.cookie = "home-manager-auth=; Path=/; Max-Age=0; SameSite=Lax";
+  const handleLogout = async () => {
+    // The session cookie is HttpOnly, so only the server can clear it
+    await fetch("/api/auth", { method: "DELETE" }).catch(() => {});
     document.cookie = "home-manager-user=; Path=/; Max-Age=0; SameSite=Lax";
     window.location.href = "/login";
   };
