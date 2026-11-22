@@ -39,6 +39,19 @@ function notificationSummary(item: CalendarItem): string | null {
     .join(" · ");
 }
 
+/** A notification that is not attached to a calendar item (made in the chat or the side panel) */
+interface LooseReminder {
+  id: string;
+  message: string;
+  remind_at: string;
+  status: string;
+  is_recurring?: boolean;
+}
+
+type DayEntry =
+  | { kind: "item"; id: string; at: string; title: string; done: boolean; item: CalendarItem }
+  | { kind: "reminder"; id: string; at: string; title: string; done: boolean; reminder: LooseReminder };
+
 export default function CalendarPage() {
   const [month, setMonth] = useState(() => {
     const d = new Date();
@@ -46,6 +59,7 @@ export default function CalendarPage() {
   });
   const [selected, setSelected] = useState(() => new Date());
   const [items, setItems] = useState<CalendarItem[]>([]);
+  const [looseReminders, setLooseReminders] = useState<LooseReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [modal, setModal] = useState<{ item?: CalendarItem } | null>(null);
@@ -63,6 +77,7 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setItems(data.items ?? []);
+      setLooseReminders(data.reminders ?? []);
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -76,14 +91,25 @@ export default function CalendarPage() {
   }, [load]);
 
   const byDay = useMemo(() => {
-    const map = new Map<string, CalendarItem[]>();
-    for (const item of items) {
-      const key = dateKey(new Date(item.event_date));
+    const entries: DayEntry[] = [
+      ...items.map((item): DayEntry => ({
+        kind: "item", id: item.id, at: item.event_date, title: item.title,
+        done: item.status === "completed", item,
+      })),
+      ...looseReminders.map((reminder): DayEntry => ({
+        kind: "reminder", id: reminder.id, at: reminder.remind_at, title: reminder.message,
+        done: reminder.status === "sent", reminder,
+      })),
+    ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+
+    const map = new Map<string, DayEntry[]>();
+    for (const entry of entries) {
+      const key = dateKey(new Date(entry.at));
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(item);
+      map.get(key)!.push(entry);
     }
     return map;
-  }, [items]);
+  }, [items, looseReminders]);
 
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -128,6 +154,21 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error();
     } catch {
       alert("העדכון נכשל");
+    }
+    load();
+  };
+
+  const cancelReminder = async (reminder: LooseReminder) => {
+    if (!confirm(`לבטל את ההתראה "${reminder.message}"?`)) return;
+    try {
+      const res = await fetch("/api/calendar", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reminder_id: reminder.id }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      alert("הביטול נכשל");
     }
     load();
   };
@@ -213,7 +254,7 @@ export default function CalendarPage() {
                       {list.slice(0, 3).map((it) => (
                         <span
                           key={it.id}
-                          className={`w-1.5 h-1.5 rounded-full ${it.status === "completed" ? "bg-green-500" : "bg-blue-500"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${it.done ? "bg-green-500" : "bg-blue-500"}`}
                         />
                       ))}
                       {list.length > 3 && <span className="text-[9px] text-link">+{list.length - 3}</span>}
@@ -226,11 +267,11 @@ export default function CalendarPage() {
                       <span
                         key={it.id}
                         className={`truncate text-[11px] leading-tight rounded px-1 py-0.5 text-right
-                          ${it.status === "completed"
+                          ${it.done
                             ? "bg-badge-green-bg text-badge-green-text line-through"
                             : "bg-badge-blue-bg text-badge-blue-text"}`}
                       >
-                        {it.title}
+                        {it.kind === "reminder" ? `🔔 ${it.title}` : it.title}
                       </span>
                     ))}
                     {list.length > 2 && (
@@ -282,8 +323,41 @@ export default function CalendarPage() {
             </button>
           ) : (
             <ul className="space-y-2">
-              {dayItems.map((item) => {
-                const done = item.status === "completed";
+              {dayItems.map((entry) => {
+                if (entry.kind === "reminder") {
+                  const { reminder } = entry;
+                  const sent = reminder.status === "sent";
+                  return (
+                    <li key={entry.id} className="flex items-stretch gap-2 rounded-xl bg-surface border border-border">
+                      <span className="flex items-center justify-center w-12 flex-shrink-0 text-lg" aria-hidden="true">
+                        🔔
+                      </span>
+                      <div className="flex-1 min-w-0 text-right py-2.5">
+                        <span className="flex items-baseline gap-2">
+                          <span className="text-sm font-semibold text-link flex-shrink-0">{formatTime(reminder.remind_at)}</span>
+                          <span className={`text-sm font-medium break-words ${sent ? "text-muted" : "text-primary"}`}>
+                            {reminder.message}
+                          </span>
+                        </span>
+                        <span className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-secondary">
+                          <span>{sent ? "ההתראה נשלחה" : "התראה"}</span>
+                          {reminder.is_recurring && <span>🔁 חוזרת</span>}
+                        </span>
+                      </div>
+                      {!sent && (
+                        <button
+                          onClick={() => cancelReminder(reminder)}
+                          className="flex items-center px-3 flex-shrink-0 rounded-l-xl text-xs text-secondary hover:bg-hover hover:text-red-500 transition-colors"
+                          aria-label={`ביטול ההתראה ${reminder.message}`}
+                        >
+                          ביטול
+                        </button>
+                      )}
+                    </li>
+                  );
+                }
+                const { item } = entry;
+                const done = entry.done;
                 const notify = notificationSummary(item);
                 return (
                   <li key={item.id} className="flex items-stretch gap-2 rounded-xl bg-surface border border-border">

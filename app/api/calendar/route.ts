@@ -157,7 +157,17 @@ export async function GET(req: NextRequest) {
       ORDER BY e.event_date ASC
       LIMIT 1000
     `;
-    return json({ items });
+
+    // Notifications that stand on their own (made in the chat or the side panel)
+    const reminders = await sql`
+      SELECT id, message, remind_at, status, is_recurring, recurrence_rule
+      FROM reminders
+      WHERE event_id IS NULL AND status <> 'dismissed'
+        AND remind_at >= ${from.toISOString()} AND remind_at < ${to.toISOString()}
+      ORDER BY remind_at ASC
+      LIMIT 1000
+    `;
+    return json({ items, reminders });
   } catch (err) {
     console.error("Calendar GET:", err);
     return json({ error: "Failed to load calendar" }, 500);
@@ -268,7 +278,18 @@ export async function PATCH(req: NextRequest) {
 // ── DELETE: remove an item and its notifications ────────────────────
 export async function DELETE(req: NextRequest) {
   try {
-    const { id } = await req.json();
+    const { id, reminder_id } = await req.json();
+
+    // A standalone notification is cancelled, not erased
+    if (reminder_id) {
+      const rows = await sql`
+        UPDATE reminders SET status = 'dismissed'
+        WHERE id = ${reminder_id} AND event_id IS NULL
+        RETURNING id
+      `;
+      return rows.length > 0 ? json({ success: true }) : json({ error: "Not found" }, 404);
+    }
+
     if (!id) return json({ error: "Missing id" }, 400);
     await sql`DELETE FROM reminders WHERE event_id = ${id}`;
     const rows = await sql`DELETE FROM events WHERE id = ${id} RETURNING id`;
