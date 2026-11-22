@@ -226,6 +226,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 - Show "X פעולות בוצעו ✓" badge on assistant messages that triggered tools
 - Mobile responsive (full height, no scroll issues)
 
+### Calendar page (`app/calendar/page.tsx`)
+- Month grid plus the selected day's items; "+ הוספה" opens `CalendarItemModal` (two tabs: "מה ומתי" and "הגדרות")
+- An item is an `events` row plus one `reminders` row per chosen notification (`app/api/calendar/route.ts`)
+- Every item whose time is still ahead must have at least one notification, chosen by the user (presets before the item, or a custom time)
+- `events.is_todo` marks a to-do; ticking it sets `status = 'completed'` and dismisses its pending notifications
+
 ### PIN screen
 - When no auth cookie: show centered PIN input (4-6 digits or short password)
 - Dark theme matching main app

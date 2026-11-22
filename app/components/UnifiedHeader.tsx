@@ -19,7 +19,7 @@ const USER_LABELS: Record<string, string> = {
   shared: "משותף",
 };
 
-export type HeaderSection = "chat" | "inventory" | "resources";
+export type HeaderSection = "chat" | "inventory" | "resources" | "calendar";
 
 // ── Monochrome SVG Icons ─────────────────────────────────────────────
 
@@ -59,6 +59,14 @@ function InventoryIcon({ className }: { className?: string }) {
   return (
     <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path fillRule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7zM15 16V9.414l-5-5-5 5V16h4v-3a1 1 0 012 0v3h4z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clipRule="evenodd" />
     </svg>
   );
 }
@@ -279,6 +287,10 @@ export default function UnifiedHeader({
             <ChatIcon />
             צ׳אט
           </button>
+          <Link href="/calendar" className={navPill(active === "calendar")} aria-current={active === "calendar" ? "page" : undefined}>
+            <CalendarIcon />
+            יומן
+          </Link>
           <button onClick={goInventory} className={navPill(active === "inventory")} aria-current={active === "inventory" ? "page" : undefined}>
             <InventoryIcon />
             מלאי הבית
@@ -343,6 +355,15 @@ export default function UnifiedHeader({
                   <ChatIcon className={`w-4 h-4 flex-shrink-0 ${active === "chat" ? "text-link" : "text-muted"}`} />
                   צ׳אט
                 </button>
+                <Link
+                  role="menuitem"
+                  href="/calendar"
+                  onClick={() => setMenuOpen(false)}
+                  className={menuItem(active === "calendar")}
+                >
+                  <CalendarIcon className={`w-4 h-4 flex-shrink-0 ${active === "calendar" ? "text-link" : "text-muted"}`} />
+                  יומן
+                </Link>
                 <button role="menuitem" onClick={close(goInventory)} className={menuItem(active === "inventory")}>
                   <InventoryIcon className={`w-4 h-4 flex-shrink-0 ${active === "inventory" ? "text-link" : "text-muted"}`} />
                   מלאי הבית

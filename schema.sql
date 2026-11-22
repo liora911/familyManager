@@ -217,6 +217,10 @@ CREATE TABLE IF NOT EXISTS notification_log (
 );
 CREATE INDEX IF NOT EXISTS idx_notification_log_channel_time ON notification_log(channel, sent_at DESC);
 
+-- Calendar page: an event can be a to-do that gets ticked off.
+-- Added automatically by the app on first use; listed here for reference.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS is_todo BOOLEAN DEFAULT FALSE;
+
 -- Wrong PIN attempts, for the login limit.
 -- Created automatically by the app on first use; listed here for reference.
 CREATE TABLE IF NOT EXISTS login_attempts (
